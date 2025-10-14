@@ -419,12 +419,10 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             }
 
             String url = client.getFullUrl("/application/getApp");
-            // 由于createConsumer返回的是appName，所以consumerId就是应用名称
-            // 尝试使用appName查询，如果不支持可能需要调整为列表查询
             String requestBody = String.format(
                 "{\"%s\": \"%s\", \"%s\": \"%s\"}", 
                 "gwInstanceId", gateway.getGatewayId(),
-                "appName", consumerId  // 使用appName而不是applicationId
+                "appId", consumerId
             );
             HttpEntity<String> requestEntity = client.createRequestEntity(requestBody);
 
