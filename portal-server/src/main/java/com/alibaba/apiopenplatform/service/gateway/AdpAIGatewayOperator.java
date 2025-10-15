@@ -393,12 +393,122 @@ public class AdpAIGatewayOperator extends GatewayOperator {
 
     @Override
     public void updateConsumer(String consumerId, ConsumerCredential credential, GatewayConfig config) {
+        AdpAIGatewayConfig adpConfig = config.getAdpAIGatewayConfig();
+        if (adpConfig == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "ADP AI Gateway配置缺失");
+        }
 
+        Gateway gateway = config.getGateway();
+        if (gateway == null || gateway.getGatewayId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "网关实例ID缺失");
+        }
+
+        AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
+        try {
+
+            // 从凭据中提取API Key
+            String apiKey = null;
+            if (credential != null
+                    && credential.getApiKeyConfig() != null
+                    && credential.getApiKeyConfig().getCredentials() != null
+                    && !credential.getApiKeyConfig().getCredentials().isEmpty()) {
+                apiKey = credential.getApiKeyConfig().getCredentials().get(0).getApiKey();
+            }
+
+            String url = client.getFullUrl("/application/modifyApp");
+
+            // 构建请求体
+            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
+            requestData.set("appId", consumerId);
+            requestData.set("appName", consumerId);
+            requestData.set("authType", 5);                 // 固定参数
+            requestData.set("authTypeName", "API_KEY");
+            requestData.set("description", consumerId);
+            requestData.set("enable", true);                // 固定参数
+            if (apiKey != null) {
+                requestData.set("key", apiKey);
+            }
+            requestData.set("groups", Collections.singletonList("true")); // 固定参数
+            requestData.set("gwInstanceId", gateway.getGatewayId());
+
+            String requestBody = requestData.toString();
+            HttpEntity<String> requestEntity = client.createRequestEntity(requestBody);
+
+            log.info("Updating consumer in ADP gateway: url={}, requestBody={}", url, requestBody);
+
+            ResponseEntity<String> response = client.getRestTemplate().exchange(
+                    url, HttpMethod.POST, requestEntity, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
+                Integer code = responseJson.getInt("code", 0);
+                if (code != null && code == 200) {
+                    log.info("Successfully updated consumer {} in ADP gateway instance {}", consumerId, gateway.getGatewayId());
+                    return;
+                }
+                String message = responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                throw new BusinessException(ErrorCode.GATEWAY_ERROR, "更新ADP网关消费者失败: " + message);
+            }
+            throw new BusinessException(ErrorCode.GATEWAY_ERROR, "调用 ADP /application/modifyApp 失败");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error updating consumer {} in ADP gateway instance {}", consumerId, 
+                    gateway != null ? gateway.getGatewayId() : "unknown", e);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "更新ADP网关消费者异常: " + e.getMessage());
+        } finally {
+            client.close();
+        }
     }
 
     @Override
     public void deleteConsumer(String consumerId, GatewayConfig config) {
-        // TODO: 实现ADP AI网关消费者删除逻辑
+        AdpAIGatewayConfig adpConfig = config.getAdpAIGatewayConfig();
+        if (adpConfig == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "ADP AI Gateway配置缺失");
+        }
+
+        Gateway gateway = config.getGateway();
+        if (gateway == null || gateway.getGatewayId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "网关实例ID缺失");
+        }
+
+        AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
+        try {
+
+            String url = client.getFullUrl("/application/deleteApp");
+            String requestBody = String.format(
+                "{\"appId\": \"%s\", \"gwInstanceId\": \"%s\"}",
+                consumerId, gateway.getGatewayId()
+            );
+            HttpEntity<String> requestEntity = client.createRequestEntity(requestBody);
+
+            log.info("Deleting consumer in ADP gateway: url={}, requestBody={}", url, requestBody);
+
+            ResponseEntity<String> response = client.getRestTemplate().exchange(
+                    url, HttpMethod.POST, requestEntity, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
+                Integer code = responseJson.getInt("code", 0);
+                if (code != null && code == 200) {
+                    log.info("Successfully deleted consumer {} from ADP gateway instance {}", 
+                             consumerId, gateway.getGatewayId());
+                    return;
+                }
+                String message = responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                throw new BusinessException(ErrorCode.GATEWAY_ERROR, "删除ADP网关消费者失败: " + message);
+            }
+            throw new BusinessException(ErrorCode.GATEWAY_ERROR, "调用 ADP /application/deleteApp 失败");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error deleting consumer {} from ADP gateway instance {}", 
+                      consumerId, gateway != null ? gateway.getGatewayId() : "unknown", e);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "删除ADP网关消费者异常: " + e.getMessage());
+        } finally {
+            client.close();
+        }
     }
 
     @Override
