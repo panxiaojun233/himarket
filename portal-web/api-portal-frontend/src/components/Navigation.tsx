@@ -77,6 +77,12 @@ export function Navigation({ loading = false }: NavigationProps) {
                 >
                   MCP
                 </Link>
+                <Link 
+                  to="/agents" 
+                  className={getNavLinkClass('/agents')}
+                >
+                  Agent
+                </Link>
               </>
             )}
           </div>

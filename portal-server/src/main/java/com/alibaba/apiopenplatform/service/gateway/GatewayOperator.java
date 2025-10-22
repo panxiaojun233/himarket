@@ -46,9 +46,13 @@ public abstract class GatewayOperator<T> {
 
     abstract public PageResult<? extends GatewayMCPServerResult> fetchMcpServers(Gateway gateway, int page, int size);
 
+    abstract public PageResult<AgentAPIResult> fetchAgentAPIs(Gateway gateway, int page, int size);
+
     abstract public String fetchAPIConfig(Gateway gateway, Object config);
 
     abstract public String fetchMcpConfig(Gateway gateway, Object conf);
+
+    abstract public String fetchAgentConfig(Gateway gateway, Object conf);
 
     abstract public PageResult<GatewayResult> fetchGateways(Object param, int page, int size);
 

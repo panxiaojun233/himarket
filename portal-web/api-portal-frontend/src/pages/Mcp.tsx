@@ -167,7 +167,7 @@ function McpPage() {
                     <Title level={5} className="mb-0 truncate">
                       {server.name}
                     </Title>
-                    <Tag className="text-xs text-green-700 border-0 bg-transparent px-0">
+                    <Tag className="text-xs text-gray-500 border-0 bg-transparent px-0">
                       {server.mcpConfig?.mcpServerConfig?.transportMode || 'remote'}
                     </Tag>
                   </div>
@@ -194,7 +194,7 @@ function McpPage() {
       {/* Empty State */}
       {filteredMcpServers.length === 0 && (
         <div className="text-center py-8">
-          <div className="text-gray-500">暂无MCP服务器</div>
+          <div className="text-gray-500">暂无MCP服务</div>
         </div>
       )}
     </Layout>

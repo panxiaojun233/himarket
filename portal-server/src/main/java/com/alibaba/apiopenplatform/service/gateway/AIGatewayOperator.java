@@ -58,7 +58,7 @@ public class AIGatewayOperator extends APIGOperator {
     public PageResult<? extends GatewayMCPServerResult> fetchMcpServers(Gateway gateway, int page, int size) {
         PopGatewayClient client = new PopGatewayClient(gateway.getApigConfig());
 
-        Map<String , String> queryParams = MapUtil.<String, String>builder()
+        Map<String, String> queryParams = MapUtil.<String, String>builder()
                 .put("gatewayId", gateway.getGatewayId())
                 .put("pageNumber", String.valueOf(page))
                 .put("pageSize", String.valueOf(size))
@@ -211,6 +211,39 @@ public class AIGatewayOperator extends APIGOperator {
 
         m.setMeta(meta);
         return JSONUtil.toJsonStr(m);
+    }
+
+    @Override
+    public PageResult<AgentAPIResult> fetchAgentAPIs(Gateway gateway, int page, int size) {
+        PageResult<APIResult> apiResult = fetchAPIs(gateway, APIGAPIType.AGENT, page, size);
+
+        return new PageResult<AgentAPIResult>().mapFrom(apiResult, api ->
+                AgentAPIResult.builder()
+                        .agentApiId(api.getApiId())
+                        .agentApiName(api.getApiName())
+                        .build()
+        );
+    }
+
+    @Override
+    public String fetchAgentConfig(Gateway gateway, Object conf) {
+        APIGRefConfig config = (APIGRefConfig) conf;
+
+        AgentConfigResult result = new AgentConfigResult();
+
+        PageResult<HttpRoute> httpRoutes = fetchHttpRoutes(gateway, config.getAgentApiId(), 1, 500);
+        List<AgentConfigResult.Route> routes = new ArrayList<>();
+        for (HttpRoute httpRoute : httpRoutes.getContent()) {
+            AgentConfigResult.Route route = AgentConfigResult.Route.from(httpRoute);
+            routes.add(route);
+        }
+        // TODO
+        result.setAgentAPIConfig(AgentConfigResult.AgentAPIConfig.builder()
+                .agentProtocols(Collections.singletonList("DashScope"))
+                .routes(routes)
+                .build());
+
+        return JSONUtil.toJsonStr(result);
     }
 
     @Override

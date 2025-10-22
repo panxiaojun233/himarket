@@ -222,6 +222,12 @@ export const gatewayApi = {
       params: data
     })
   },
+  // 获取网关的Agent API列表
+  getGatewayAgentApis: (gatewayId: string, data: any) => {
+    return api.get(`/gateways/${gatewayId}/agent-apis`, {
+      params: data
+    })
+  },
   // 获取网关的Dashboard URL
   getDashboard: (gatewayId: string) => {
     return api.get(`/gateways/${gatewayId}/dashboard`)

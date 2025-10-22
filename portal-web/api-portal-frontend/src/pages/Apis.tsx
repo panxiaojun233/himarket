@@ -163,17 +163,23 @@ function APIsPage() {
             >
               <div className="flex items-start space-x-4">
                 {/* API Icon */}
-                <Avatar
-                  size={48}
-                  src={product.icon ? getIconUrl(product.icon) : undefined}
-                  style={{ 
-                    backgroundColor: getApiIconColor(product.name),
-                    fontSize: '18px',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {!product.icon && getApiIcon(product.name)}
-                </Avatar>
+                {product.icon ? (
+                  <Avatar
+                    size={48}
+                    src={getIconUrl(product.icon)}
+                  />
+                ) : (
+                  <Avatar
+                    size={48}
+                    style={{ 
+                      backgroundColor: getApiIconColor(product.name),
+                      fontSize: '18px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {getApiIcon(product.name)}
+                  </Avatar>
+                )}
 
                 {/* API Info */}
                 <div className="flex-1 min-w-0">
@@ -181,7 +187,7 @@ function APIsPage() {
                     <Title level={5} className="mb-0 truncate">
                       {product.name}
                     </Title>
-                    <Tag className="text-xs text-green-700 border-0 bg-transparent px-0">
+                    <Tag className="text-xs text-gray-500 border-0 bg-transparent px-0">
                       REST
                     </Tag>
                   </div>
@@ -213,7 +219,7 @@ function APIsPage() {
       {/* Empty State */}
       {filteredApiProducts.length === 0 && (
         <div className="text-center py-8">
-          <div className="text-gray-500">暂无API产品</div>
+          <div className="text-gray-500">暂无API服务</div>
         </div>
       )}
     </Layout>

@@ -27,7 +27,7 @@ import remarkGfm from 'remark-gfm';
 import 'react-markdown-editor-lite/lib/index.css'
 
 function McpDetail() {
-  const { mcpName } = useParams();
+  const { mcpProductId } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState<Product | null>(null);
@@ -180,13 +180,13 @@ function McpDetail() {
 
   useEffect(() => {
     const fetchDetail = async () => {
-      if (!mcpName) {
+      if (!mcpProductId) {
         return;
       }
       setLoading(true);
       setError("");
       try {
-        const response: ApiResponse<Product> = await api.get(`/products/${mcpName}`);
+        const response: ApiResponse<Product> = await api.get(`/products/${mcpProductId}`);
         if (response.code === "SUCCESS" && response.data) {
           setData(response.data);
 
@@ -219,7 +219,7 @@ function McpDetail() {
       }
     };
     fetchDetail();
-  }, [mcpName]);
+  }, [mcpProductId]);
 
   // 监听 mcpConfig 变化，重新生成连接配置
   useEffect(() => {

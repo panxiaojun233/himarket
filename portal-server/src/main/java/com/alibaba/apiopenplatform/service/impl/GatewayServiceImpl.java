@@ -168,6 +168,12 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
     }
 
     @Override
+    public PageResult<AgentAPIResult> fetchAgentAPIs(String gatewayId, int page, int size) {
+        Gateway gateway = findGateway(gatewayId);
+        return getOperator(gateway).fetchAgentAPIs(gateway, page, size);
+    }
+
+    @Override
     public String fetchAPIConfig(String gatewayId, Object config) {
         Gateway gateway = findGateway(gatewayId);
         return getOperator(gateway).fetchAPIConfig(gateway, config);
@@ -177,6 +183,12 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
     public String fetchMcpConfig(String gatewayId, Object conf) {
         Gateway gateway = findGateway(gatewayId);
         return getOperator(gateway).fetchMcpConfig(gateway, conf);
+    }
+
+    @Override
+    public String fetchAgentConfig(String gatewayId, Object conf) {
+        Gateway gateway = findGateway(gatewayId);
+        return getOperator(gateway).fetchAgentConfig(gateway, conf);
     }
 
     @Override

@@ -122,7 +122,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PageResult<ProductResult> listProducts(QueryProductParam param, Pageable pageable) {
-        log.info("zhaoh-test-listProducts-start");
         if (contextHolder.isDeveloper()) {
             param.setPortalId(contextHolder.getPortal());
         }
@@ -207,9 +206,12 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void unpublishProduct(String productId, String portalId) {
         portalService.existsPortal(portalId);
+        Product product = findProduct(productId);
+        product.setStatus(ProductStatus.READY);
 
         publicationRepository.findByPortalIdAndProductId(portalId, productId)
                 .ifPresent(publicationRepository::delete);
+        productRepository.save(product);
     }
 
     @Override
@@ -224,9 +226,6 @@ public class ProductServiceImpl implements ProductService {
         eventPublisher.publishEvent(new ProductDeletingEvent(productId));
     }
 
-    /**
-     * 查找产品，如果不存在则抛出异常
-     */
     private Product findProduct(String productId) {
         return productRepository.findByProductId(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, Resources.PRODUCT, productId));
@@ -282,9 +281,12 @@ public class ProductServiceImpl implements ProductService {
             if (product.getType() == ProductType.REST_API) {
                 String apiConfig = gatewayService.fetchAPIConfig(gateway.getGatewayId(), config);
                 productRef.setApiConfig(apiConfig);
-            } else {
+            } else if (product.getType() == ProductType.MCP_SERVER) {
                 String mcpConfig = gatewayService.fetchMcpConfig(gateway.getGatewayId(), config);
                 productRef.setMcpConfig(mcpConfig);
+            } else if (product.getType() == ProductType.AGENT_API) {
+                String agentConfig = gatewayService.fetchAgentConfig(gateway.getGatewayId(), config);
+                productRef.setAgentConfig(agentConfig);
             }
         } else if (sourceType.isNacos()) {
             // 从Nacos获取MCP Server配置
@@ -306,11 +308,15 @@ public class ProductServiceImpl implements ProductService {
                         product.setApiConfig(JSONUtil.toBean(productRef.getApiConfig(), APIConfigResult.class));
                     }
 
-                    // API Config
+                    // MCP Config
                     if (StrUtil.isNotBlank(productRef.getMcpConfig())) {
                         product.setMcpConfig(JSONUtil.toBean(productRef.getMcpConfig(), MCPConfigResult.class));
                     }
-                    product.setStatus(ProductStatus.READY);
+
+                    // Agent Config
+                    if (StrUtil.isNotBlank(productRef.getAgentConfig())) {
+                        product.setAgentConfig(JSONUtil.toBean(productRef.getAgentConfig(), AgentConfigResult.class));
+                    }
                 });
 
         if (publicationRepository.existsByProductId(product.getProductId())) {

@@ -93,6 +93,11 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     }
 
     @Override
+    public PageResult<AgentAPIResult> fetchAgentAPIs(Gateway gateway, int page, int size) {
+        return null;
+    }
+
+    @Override
     public String fetchAPIConfig(Gateway gateway, Object config) {
         return "";
     }
@@ -141,6 +146,11 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         } finally {
             client.close();
         }
+    }
+
+    @Override
+    public String fetchAgentConfig(Gateway gateway, Object conf) {
+        return "";
     }
 
     /**

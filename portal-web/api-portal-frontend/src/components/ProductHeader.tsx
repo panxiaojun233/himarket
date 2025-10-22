@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Typography, Button, Modal, Select, message, Popconfirm, Input, Pagination, Spin } from "antd";
-import { ApiOutlined, CheckCircleFilled, ClockCircleFilled, ExclamationCircleFilled, PlusOutlined } from "@ant-design/icons";
+import { ApiOutlined, CheckCircleFilled, ClockCircleFilled, ExclamationCircleFilled, PlusOutlined, RobotOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import { getConsumers, subscribeProduct, getProductSubscriptionStatus, unsubscribeProduct, getProductSubscriptions } from "../lib/api";
 import type { Consumer } from "../types/consumer";
@@ -16,7 +16,7 @@ interface ProductHeaderProps {
   defaultIcon?: string;
   mcpConfig?: McpConfig | null;
   updatedAt?: string;
-  productType?: 'REST_API' | 'MCP_SERVER';
+  productType?: 'REST_API' | 'MCP_SERVER' | 'AGENT_API';
 }
 
 // 处理产品图标的函数
@@ -87,7 +87,7 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
   const [searchKeyword, setSearchKeyword] = useState("");
 
   // 判断是否应该显示申请订阅按钮
-  const shouldShowSubscribeButton = !mcpConfig || mcpConfig.meta.source !== 'NACOS';
+  const shouldShowSubscribeButton = productType === 'AGENT_API' || (!mcpConfig || mcpConfig.meta.source !== 'NACOS');
 
   // 获取产品ID
   const productId = id || mcpName || '';
@@ -270,9 +270,13 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
       <div className="mb-2">
         {/* 第一行：图标和标题信息 */}
         <div className="flex items-center gap-4 mb-3">
-          {(!icon || imageLoadFailed) && productType === 'REST_API' ? (
+          {(!icon || imageLoadFailed) && (productType === 'REST_API' || productType === 'AGENT_API') ? (
             <div className="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center bg-gray-50 border border-gray-200">
-              <ApiOutlined className="text-3xl text-black" />
+              {productType === 'REST_API' ? (
+                <ApiOutlined className="text-3xl text-black" />
+              ) : (
+                <RobotOutlined className="text-3xl text-black" />
+              )}
             </div>
           ) : (
             <img
@@ -281,7 +285,7 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
               className="w-16 h-16 rounded-xl object-cover border border-gray-200 flex-shrink-0"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                if (productType === 'REST_API') {
+                if (productType === 'REST_API' || productType === 'AGENT_API') {
                   setImageLoadFailed(true);
                 } else {
                   // 确保有一个最终的fallback图片，避免无限循环请求

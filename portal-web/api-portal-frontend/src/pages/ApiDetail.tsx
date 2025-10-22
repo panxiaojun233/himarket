@@ -28,7 +28,7 @@ interface UpdatedProduct extends Omit<Product, 'apiSpec'> {
 }
 
 function ApiDetailPage() {
-  const { id } = useParams();
+  const { apiProductId } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [apiData, setApiData] = useState<UpdatedProduct | null>(null);
@@ -37,15 +37,15 @@ function ApiDetailPage() {
   const [exampleMethod, setExampleMethod] = useState<string>('GET');
 
   useEffect(() => {
-    if (!id) return;
+    if (!apiProductId) return;
     fetchApiDetail();
-  }, [id]);
+  }, [apiProductId]);
 
   const fetchApiDetail = async () => {
     setLoading(true);
     setError('');
     try {
-      const response: ApiResponse<UpdatedProduct> = await api.get(`/products/${id}`);
+      const response: ApiResponse<UpdatedProduct> = await api.get(`/products/${apiProductId}`);
       if (response.code === "SUCCESS" && response.data) {
         setApiData(response.data);
         

@@ -32,6 +32,8 @@ public enum APIGAPIType {
 
     MCP("MCP"),
 
+    AGENT("Agent"),
+
     ;
 
     private final String type;

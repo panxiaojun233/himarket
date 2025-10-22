@@ -104,6 +104,14 @@ public class GatewayController {
         return gatewayService.fetchMcpServers(gatewayId, page, size);
     }
 
+    @Operation(summary = "获取Agent API列表")
+    @GetMapping("/{gatewayId}/agent-apis")
+    public PageResult<AgentAPIResult> fetchAgentAPIs(@PathVariable String gatewayId,
+                                                     @RequestParam(defaultValue = "1") int page,
+                                                     @RequestParam(defaultValue = "500") int size) {
+        return gatewayService.fetchAgentAPIs(gatewayId, page, size);
+    }
+
     @Operation(summary = "获取仪表板URL")
     @GetMapping("/{gatewayId}/dashboard")
     public String getDashboard(@PathVariable String gatewayId,

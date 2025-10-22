@@ -77,6 +77,11 @@ public class APIGOperator extends GatewayOperator<APIGClient> {
     }
 
     @Override
+    public PageResult<AgentAPIResult> fetchAgentAPIs(Gateway gateway, int page, int size) {
+        throw new UnsupportedOperationException("APIG does not support Agent APIs");
+    }
+
+    @Override
     public String fetchAPIConfig(Gateway gateway, Object config) {
         APIGClient client = getClient(gateway);
 
@@ -117,6 +122,11 @@ public class APIGOperator extends GatewayOperator<APIGClient> {
     @Override
     public String fetchMcpConfig(Gateway gateway, Object conf) {
         throw new UnsupportedOperationException("APIG does not support MCP Servers");
+    }
+
+    @Override
+    public String fetchAgentConfig(Gateway gateway, Object conf) {
+        throw new UnsupportedOperationException("APIG does not support Agent APIs");
     }
 
     @Override

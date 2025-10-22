@@ -86,9 +86,13 @@ public interface GatewayService {
 
     PageResult<GatewayMCPServerResult> fetchMcpServers(String gatewayId, int page, int size);
 
+    PageResult<AgentAPIResult> fetchAgentAPIs(String gatewayId, int page, int size);
+
     String fetchAPIConfig(String gatewayId, Object config);
 
     String fetchMcpConfig(String gatewayId, Object conf);
+
+    String fetchAgentConfig(String gatewayId, Object conf);
 
     String createConsumer(Consumer consumer, ConsumerCredential credential, GatewayConfig config);
 

@@ -59,5 +59,7 @@ public class ProductResult implements OutputConverter<ProductResult, Product> {
 
     private MCPConfigResult mcpConfig;
 
+    private AgentConfigResult agentConfig;
+
     private Boolean enabled;
 }
