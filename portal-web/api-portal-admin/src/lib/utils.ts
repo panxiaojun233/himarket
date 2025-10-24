@@ -40,6 +40,9 @@ export const getServiceName = (linkedServiceParam: any) => {
     if ('agentApiName' in linkedServiceParam.apigRefConfig && linkedServiceParam.apigRefConfig.agentApiName) {
       return linkedServiceParam.apigRefConfig.agentApiName
     }
+    if ('modelApiName' in linkedServiceParam.apigRefConfig && linkedServiceParam.apigRefConfig.modelApiName) {
+      return linkedServiceParam.apigRefConfig.modelApiName
+    }
   }
   if (linkedServiceParam?.higressRefConfig) {
     return linkedServiceParam.higressRefConfig.mcpServerName
@@ -106,6 +109,7 @@ export const ProductTypeMap: Record<string, string> = {
   REST_API: 'REST API',
   MCP_SERVER: 'MCP Server',
   AGENT_API: 'Agent API',
+  MODEL_API: 'Model API',
 };
 
 // OpenAPI 规范解析相关类型和函数

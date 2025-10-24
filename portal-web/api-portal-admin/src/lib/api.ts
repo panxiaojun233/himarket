@@ -228,6 +228,12 @@ export const gatewayApi = {
       params: data
     })
   },
+  // 获取网关的Model API列表
+  getGatewayModelApis: (gatewayId: string, data: any) => {
+    return api.get(`/gateways/${gatewayId}/model-apis`, {
+      params: data
+    })
+  },
   // 获取网关的Dashboard URL
   getDashboard: (gatewayId: string) => {
     return api.get(`/gateways/${gatewayId}/dashboard`)

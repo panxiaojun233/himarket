@@ -34,6 +34,8 @@ public enum APIGAPIType {
 
     AGENT("Agent"),
 
+    MODEL("LLM")
+
     ;
 
     private final String type;

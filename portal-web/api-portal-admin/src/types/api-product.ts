@@ -62,6 +62,36 @@ export interface ApiProductAgentConfig {
   };
 }
 
+export interface ApiProductModelConfig {
+  modelAPIConfig: {
+    aiProtocols: string[];
+    routes: Array<{
+      domains: Array<{
+        domain: string;
+        protocol: string;
+      }>;
+      description: string;
+      match: {
+        methods: string[] | null;
+        path: {
+          value: string;
+          type: string;
+        };
+        headers?: Array<{
+          name: string;
+          type: string;
+          value: string;
+        }> | null;
+        queryParams?: Array<{
+          name: string;
+          type: string;
+          value: string;
+        }> | null;
+      };
+    }>;
+  };
+}
+
 // API 配置相关类型
 export interface RestAPIItem {
   apiId: string;
@@ -94,7 +124,13 @@ export interface AIGatewayAgentItem {
   fromGatewayType: 'APIG_AI'; // Agent API 只支持 APIG_AI 网关
 }
 
-export type ApiItem = RestAPIItem | HigressMCPItem | APIGAIMCPItem | NacosMCPItem | AIGatewayAgentItem;
+export interface AIGatewayModelItem {
+  modelApiId: string;
+  modelApiName: string;
+  fromGatewayType: 'APIG_AI'; // Model API 只支持 APIG_AI 网关
+}
+
+export type ApiItem = RestAPIItem | HigressMCPItem | APIGAIMCPItem | NacosMCPItem | AIGatewayAgentItem | AIGatewayModelItem;
 
 // 关联服务配置
 export interface LinkedService {
@@ -102,7 +138,7 @@ export interface LinkedService {
   gatewayId?: string;
   nacosId?: string;
   sourceType: 'GATEWAY' | 'NACOS';
-  apigRefConfig?: RestAPIItem | APIGAIMCPItem | AIGatewayAgentItem;
+  apigRefConfig?: RestAPIItem | APIGAIMCPItem | AIGatewayAgentItem | AIGatewayModelItem;
   higressRefConfig?: HigressMCPItem;
   nacosRefConfig?: NacosMCPItem;
   adpAIGatewayRefConfig?: APIGAIMCPItem; // ADP_AI_GATEWAY 不支持 Agent API
@@ -112,7 +148,7 @@ export interface ApiProduct {
   productId: string;
   name: string;
   description: string;
-  type: 'REST_API' | 'MCP_SERVER' | 'AGENT_API';
+  type: 'REST_API' | 'MCP_SERVER' | 'AGENT_API' | 'MODEL_API';
   category: string;
   status: 'PENDING' | 'READY' | 'PUBLISHED' | string;
   createAt: string;
@@ -121,6 +157,7 @@ export interface ApiProduct {
   apiConfig?: ApiProductConfig;
   mcpConfig?: ApiProductMcpConfig;
   agentConfig?: ApiProductAgentConfig;
+  modelConfig?: ApiProductModelConfig;
   document?: string;
   icon?: ProductIcon | null;
 } 

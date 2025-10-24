@@ -22,8 +22,13 @@ package com.alibaba.apiopenplatform.service;
 import com.alibaba.apiopenplatform.dto.params.gateway.ImportGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryGatewayParam;
-import com.alibaba.apiopenplatform.dto.result.GatewayMCPServerResult;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
+import com.alibaba.apiopenplatform.dto.result.product.ProductRefResult;
 import com.alibaba.apiopenplatform.entity.Consumer;
 import com.alibaba.apiopenplatform.entity.ConsumerCredential;
 import com.alibaba.apiopenplatform.support.consumer.ConsumerAuthConfig;
@@ -88,11 +93,15 @@ public interface GatewayService {
 
     PageResult<AgentAPIResult> fetchAgentAPIs(String gatewayId, int page, int size);
 
+    PageResult<ModelAPIResult> fetchModelAPIs(String gatewayId, int page, int size);
+
     String fetchAPIConfig(String gatewayId, Object config);
 
     String fetchMcpConfig(String gatewayId, Object conf);
 
     String fetchAgentConfig(String gatewayId, Object conf);
+
+    String fetchModelConfig(String gatewayId, Object conf);
 
     String createConsumer(Consumer consumer, ConsumerCredential credential, GatewayConfig config);
 

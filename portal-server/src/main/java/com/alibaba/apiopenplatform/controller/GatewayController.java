@@ -24,8 +24,12 @@ import com.alibaba.apiopenplatform.dto.params.gateway.ImportGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAdpAIGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryGatewayParam;
-import com.alibaba.apiopenplatform.dto.result.GatewayMCPServerResult;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
 import com.alibaba.apiopenplatform.service.GatewayService;
 import com.alibaba.apiopenplatform.service.AdpAIGatewayService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,6 +114,14 @@ public class GatewayController {
                                                      @RequestParam(defaultValue = "1") int page,
                                                      @RequestParam(defaultValue = "500") int size) {
         return gatewayService.fetchAgentAPIs(gatewayId, page, size);
+    }
+
+    @Operation(summary = "获取Model API列表")
+    @GetMapping("/{gatewayId}/model-apis")
+    public PageResult<ModelAPIResult> fetchModelAPIs(@PathVariable String gatewayId,
+                                                     @RequestParam(defaultValue = "1") int page,
+                                                     @RequestParam(defaultValue = "500") int size) {
+        return gatewayService.fetchModelAPIs(gatewayId, page, size);
     }
 
     @Operation(summary = "获取仪表板URL")

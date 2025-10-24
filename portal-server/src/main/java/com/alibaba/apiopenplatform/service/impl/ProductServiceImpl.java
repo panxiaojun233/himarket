@@ -30,7 +30,17 @@ import com.alibaba.apiopenplatform.core.exception.ErrorCode;
 import com.alibaba.apiopenplatform.core.security.ContextHolder;
 import com.alibaba.apiopenplatform.core.utils.IdGenerator;
 import com.alibaba.apiopenplatform.dto.params.product.*;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentConfigResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIConfigResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.MCPConfigResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelConfigResult;
+import com.alibaba.apiopenplatform.dto.result.portal.PortalResult;
+import com.alibaba.apiopenplatform.dto.result.product.ProductPublicationResult;
+import com.alibaba.apiopenplatform.dto.result.product.ProductRefResult;
+import com.alibaba.apiopenplatform.dto.result.product.ProductResult;
+import com.alibaba.apiopenplatform.dto.result.product.SubscriptionResult;
 import com.alibaba.apiopenplatform.entity.*;
 import com.alibaba.apiopenplatform.repository.*;
 import com.alibaba.apiopenplatform.service.GatewayService;
@@ -277,28 +287,46 @@ public class ProductServiceImpl implements ProductService {
 
         if (sourceType.isGateway()) {
             GatewayResult gateway = gatewayService.getGateway(productRef.getGatewayId());
-            Object config = gateway.getGatewayType().isHigress() ? productRef.getHigressRefConfig() : gateway.getGatewayType().isAdpAIGateway() ? productRef.getAdpAIGatewayRefConfig() : productRef.getApigRefConfig();
-            if (product.getType() == ProductType.REST_API) {
-                String apiConfig = gatewayService.fetchAPIConfig(gateway.getGatewayId(), config);
-                productRef.setApiConfig(apiConfig);
-            } else if (product.getType() == ProductType.MCP_SERVER) {
-                String mcpConfig = gatewayService.fetchMcpConfig(gateway.getGatewayId(), config);
-                productRef.setMcpConfig(mcpConfig);
-            } else if (product.getType() == ProductType.AGENT_API) {
-                String agentConfig = gatewayService.fetchAgentConfig(gateway.getGatewayId(), config);
-                productRef.setAgentConfig(agentConfig);
+
+            // Determine specific configuration type
+            Object config;
+            if (gateway.getGatewayType().isHigress()) {
+                config = productRef.getHigressRefConfig();
+            } else if (gateway.getGatewayType().isAdpAIGateway()) {
+                config = productRef.getAdpAIGatewayRefConfig();
+            } else {
+                config = productRef.getApigRefConfig();
+            }
+
+            // Handle different configurations based on product type
+            switch (product.getType()) {
+                case REST_API:
+                    productRef.setApiConfig(gatewayService.fetchAPIConfig(gateway.getGatewayId(), config));
+                    break;
+                case MCP_SERVER:
+                    productRef.setMcpConfig(gatewayService.fetchMcpConfig(gateway.getGatewayId(), config));
+                    break;
+                case AGENT_API:
+                    productRef.setAgentConfig(gatewayService.fetchAgentConfig(gateway.getGatewayId(), config));
+                    break;
+                case MODEL_API:
+                    productRef.setModelConfig(gatewayService.fetchModelConfig(gateway.getGatewayId(), config));
+                    break;
             }
         } else if (sourceType.isNacos()) {
-            // 从Nacos获取MCP Server配置
+            // Handle Nacos configuration
             NacosRefConfig nacosRefConfig = productRef.getNacosRefConfig();
             if (nacosRefConfig != null) {
                 String mcpConfig = nacosService.fetchMcpConfig(productRef.getNacosId(), nacosRefConfig);
                 productRef.setMcpConfig(mcpConfig);
             }
         }
+
+        // Update status
         product.setStatus(ProductStatus.READY);
         productRef.setEnabled(true);
     }
+
 
     private void fullFillProduct(ProductResult product) {
         productRefRepository.findFirstByProductId(product.getProductId())
@@ -316,6 +344,11 @@ public class ProductServiceImpl implements ProductService {
                     // Agent Config
                     if (StrUtil.isNotBlank(productRef.getAgentConfig())) {
                         product.setAgentConfig(JSONUtil.toBean(productRef.getAgentConfig(), AgentConfigResult.class));
+                    }
+
+                    // Model Config
+                    if (StrUtil.isNotBlank(productRef.getModelConfig())) {
+                        product.setModelConfig(JSONUtil.toBean(productRef.getModelConfig(), ModelConfigResult.class));
                     }
                 });
 

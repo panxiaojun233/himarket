@@ -30,7 +30,13 @@ import com.alibaba.apiopenplatform.dto.params.gateway.ImportGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAdpAIGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryGatewayParam;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
+import com.alibaba.apiopenplatform.dto.result.product.ProductRefResult;
 import com.alibaba.apiopenplatform.entity.*;
 import com.alibaba.apiopenplatform.repository.GatewayRepository;
 import com.alibaba.apiopenplatform.repository.ProductRefRepository;
@@ -174,6 +180,12 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
     }
 
     @Override
+    public PageResult<ModelAPIResult> fetchModelAPIs(String gatewayId, int page, int size) {
+        Gateway gateway = findGateway(gatewayId);
+        return getOperator(gateway).fetchModelAPIs(gateway, page, size);
+    }
+
+    @Override
     public String fetchAPIConfig(String gatewayId, Object config) {
         Gateway gateway = findGateway(gatewayId);
         return getOperator(gateway).fetchAPIConfig(gateway, config);
@@ -189,6 +201,12 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
     public String fetchAgentConfig(String gatewayId, Object conf) {
         Gateway gateway = findGateway(gatewayId);
         return getOperator(gateway).fetchAgentConfig(gateway, conf);
+    }
+
+    @Override
+    public String fetchModelConfig(String gatewayId, Object conf) {
+        Gateway gateway = findGateway(gatewayId);
+        return getOperator(gateway).fetchModelConfig(gateway, conf);
     }
 
     @Override
@@ -271,9 +289,9 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
     }
 
     @Override
-    public String getDashboard(String gatewayId,String type) {
+    public String getDashboard(String gatewayId, String type) {
         Gateway gateway = findGateway(gatewayId);
-        return getOperator(gateway).getDashboard(gateway,type); //type: Portal,MCP,API
+        return getOperator(gateway).getDashboard(gateway, type); //type: Portal,MCP,API
     }
 
     private Specification<Gateway> buildGatewaySpec(QueryGatewayParam param) {

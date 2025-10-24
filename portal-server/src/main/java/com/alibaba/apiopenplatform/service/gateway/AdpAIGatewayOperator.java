@@ -3,8 +3,14 @@ package com.alibaba.apiopenplatform.service.gateway;
 import com.alibaba.apiopenplatform.core.exception.BusinessException;
 import com.alibaba.apiopenplatform.core.exception.ErrorCode;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAdpAIGatewayParam;
-import com.alibaba.apiopenplatform.dto.result.*;
-import com.alibaba.apiopenplatform.dto.result.AdpGatewayInstanceResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.AdpGatewayInstanceResult;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.AdpMcpServerListResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
 import com.alibaba.apiopenplatform.entity.Consumer;
 import com.alibaba.apiopenplatform.entity.ConsumerCredential;
 import com.alibaba.apiopenplatform.entity.Gateway;
@@ -15,8 +21,9 @@ import com.alibaba.apiopenplatform.support.gateway.AdpAIGatewayConfig;
 import com.alibaba.apiopenplatform.service.gateway.client.AdpAIGatewayClient;
 import com.alibaba.apiopenplatform.support.gateway.GatewayConfig;
 import com.alibaba.apiopenplatform.support.product.APIGRefConfig;
-import com.alibaba.apiopenplatform.dto.result.MCPConfigResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.MCPConfigResult;
 import cn.hutool.json.JSONUtil;
+import com.aliyun.sdk.service.apig20240327.models.HttpApiApiInfo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -98,6 +105,11 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     }
 
     @Override
+    public PageResult<ModelAPIResult> fetchModelAPIs(Gateway gateway, int page, int size) {
+        return null;
+    }
+
+    @Override
     public String fetchAPIConfig(Gateway gateway, Object config) {
         return "";
     }
@@ -150,6 +162,11 @@ public class AdpAIGatewayOperator extends GatewayOperator {
 
     @Override
     public String fetchAgentConfig(Gateway gateway, Object conf) {
+        return "";
+    }
+
+    @Override
+    public String fetchModelConfig(Gateway gateway, Object conf) {
         return "";
     }
 
@@ -690,7 +707,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     }
 
     @Override
-    public APIResult fetchAPI(Gateway gateway, String apiId) {
+    public HttpApiApiInfo fetchAPI(Gateway gateway, String apiId) {
         return null;
     }
 

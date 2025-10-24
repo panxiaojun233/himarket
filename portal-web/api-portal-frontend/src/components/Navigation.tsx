@@ -83,6 +83,12 @@ export function Navigation({ loading = false }: NavigationProps) {
                 >
                   Agent
                 </Link>
+                <Link 
+                  to="/models" 
+                  className={getNavLinkClass('/models')}
+                >
+                  Model
+                </Link>
               </>
             )}
           </div>

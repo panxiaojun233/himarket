@@ -1,6 +1,6 @@
 package com.alibaba.apiopenplatform.controller;
 
-import com.alibaba.apiopenplatform.dto.result.AuthResult;
+import com.alibaba.apiopenplatform.dto.result.common.AuthResult;
 import com.alibaba.apiopenplatform.service.OAuth2Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;

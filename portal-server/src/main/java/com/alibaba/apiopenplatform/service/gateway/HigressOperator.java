@@ -21,7 +21,14 @@ package com.alibaba.apiopenplatform.service.gateway;
 
 import cn.hutool.core.map.MapBuilder;
 import cn.hutool.json.JSONUtil;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.HigressMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.MCPConfigResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
 import com.alibaba.apiopenplatform.entity.Gateway;
 import com.alibaba.apiopenplatform.entity.Consumer;
 import com.alibaba.apiopenplatform.entity.ConsumerCredential;
@@ -34,6 +41,7 @@ import com.alibaba.apiopenplatform.support.gateway.GatewayConfig;
 import com.alibaba.apiopenplatform.support.gateway.HigressConfig;
 import com.alibaba.apiopenplatform.support.product.HigressRefConfig;
 
+import com.aliyun.sdk.service.apig20240327.models.HttpApiApiInfo;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +98,11 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
     }
 
     @Override
+    public PageResult<ModelAPIResult> fetchModelAPIs(Gateway gateway, int page, int size) {
+        return null;
+    }
+
+    @Override
     public String fetchAPIConfig(Gateway gateway, Object config) {
         throw new UnsupportedOperationException("Higress gateway does not support fetching API config");
     }
@@ -135,6 +148,11 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
 
     @Override
     public String fetchAgentConfig(Gateway gateway, Object conf) {
+        return "";
+    }
+
+    @Override
+    public String fetchModelConfig(Gateway gateway, Object conf) {
         return "";
     }
 
@@ -226,7 +244,7 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
     }
 
     @Override
-    public APIResult fetchAPI(Gateway gateway, String apiId) {
+    public HttpApiApiInfo fetchAPI(Gateway gateway, String apiId) {
         throw new UnsupportedOperationException("Higress gateway does not support fetching API");
     }
 

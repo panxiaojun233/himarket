@@ -27,8 +27,17 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.apiopenplatform.core.exception.BusinessException;
 import com.alibaba.apiopenplatform.core.exception.ErrorCode;
-import com.alibaba.apiopenplatform.dto.result.GatewayMCPServerResult;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.DomainResult;
+import com.alibaba.apiopenplatform.dto.result.common.PageResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.APIGMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
+import com.alibaba.apiopenplatform.dto.result.agent.AgentConfigResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.HttpRouteResult;
+import com.alibaba.apiopenplatform.dto.result.mcp.MCPConfigResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
+import com.alibaba.apiopenplatform.dto.result.model.ModelConfigResult;
 import com.alibaba.apiopenplatform.entity.Gateway;
 import com.alibaba.apiopenplatform.service.gateway.client.APIGClient;
 import com.alibaba.apiopenplatform.service.gateway.client.PopGatewayClient;
@@ -226,22 +235,64 @@ public class AIGatewayOperator extends APIGOperator {
     }
 
     @Override
+    public PageResult<ModelAPIResult> fetchModelAPIs(Gateway gateway, int page, int size) {
+        PageResult<APIResult> apiResult = fetchAPIs(gateway, APIGAPIType.MODEL, page, size);
+
+        return new PageResult<ModelAPIResult>().mapFrom(apiResult, api ->
+                ModelAPIResult.builder()
+                        .modelApiId(api.getApiId())
+                        .modelApiName(api.getApiName())
+                        .build()
+        );
+    }
+
+    @Override
     public String fetchAgentConfig(Gateway gateway, Object conf) {
         APIGRefConfig config = (APIGRefConfig) conf;
-
         AgentConfigResult result = new AgentConfigResult();
 
+        HttpApiApiInfo apiInfo = fetchAPI(gateway, config.getAgentApiId());
+        List<DomainResult> apiDomains = extractAPIDomains(apiInfo);
+
+        // Agent API consists of HTTP routes
         PageResult<HttpRoute> httpRoutes = fetchHttpRoutes(gateway, config.getAgentApiId(), 1, 500);
-        List<AgentConfigResult.Route> routes = new ArrayList<>();
-        for (HttpRoute httpRoute : httpRoutes.getContent()) {
-            AgentConfigResult.Route route = AgentConfigResult.Route.from(httpRoute);
-            routes.add(route);
-        }
-        // TODO
-        result.setAgentAPIConfig(AgentConfigResult.AgentAPIConfig.builder()
+
+        List<HttpRouteResult> routeResults = httpRoutes.getContent()
+                .stream()
+                .map(httpRoute -> new HttpRouteResult().convertFrom(httpRoute, apiDomains))
+                .collect(Collectors.toList());
+
+        AgentConfigResult.AgentAPIConfig agentAPIConfig = AgentConfigResult.AgentAPIConfig.builder()
+                // TODO Retrieve agent protocol from route configuration
                 .agentProtocols(Collections.singletonList("DashScope"))
-                .routes(routes)
-                .build());
+                .routes(routeResults)
+                .build();
+        result.setAgentAPIConfig(agentAPIConfig);
+
+        return JSONUtil.toJsonStr(result);
+    }
+
+    @Override
+    public String fetchModelConfig(Gateway gateway, Object conf) {
+        APIGRefConfig config = (APIGRefConfig) conf;
+        ModelConfigResult result = new ModelConfigResult();
+
+        // Fetch http routes
+        HttpApiApiInfo apiInfo = fetchAPI(gateway, config.getModelApiId());
+        PageResult<HttpRoute> httpRoutes = fetchHttpRoutes(gateway, config.getModelApiId(), 1, 500);
+
+        List<DomainResult> apiDomains = extractAPIDomains(apiInfo);
+        // Convert route results
+        List<HttpRouteResult> routeResults = httpRoutes.getContent()
+                .stream()
+                .map(httpRoute -> new HttpRouteResult().convertFrom(httpRoute, apiDomains))
+                .collect(Collectors.toList());
+
+        ModelConfigResult.ModelAPIConfig apiConfig = ModelConfigResult.ModelAPIConfig.builder()
+                .aiProtocols(apiInfo.getAiProtocols())
+                .routes(routeResults)
+                .build();
+        result.setModelAPIConfig(apiConfig);
 
         return JSONUtil.toJsonStr(result);
     }

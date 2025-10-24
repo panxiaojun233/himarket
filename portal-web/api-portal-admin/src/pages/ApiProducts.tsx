@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { Badge, Button, Card, Dropdown, Modal, message, Pagination, Skeleton, Input, Select, Tag, Space } from 'antd';
 import type { ApiProduct, ProductIcon } from '@/types/api-product';
-import { ApiOutlined, MoreOutlined, PlusOutlined, ExclamationCircleOutlined, ExclamationCircleFilled, ClockCircleFilled, CheckCircleFilled, SearchOutlined, RobotOutlined } from '@ant-design/icons';
+import { ApiOutlined, MoreOutlined, PlusOutlined, ExclamationCircleOutlined, ExclamationCircleFilled, ClockCircleFilled, CheckCircleFilled, SearchOutlined, RobotOutlined, BulbOutlined } from '@ant-design/icons';
 import McpServerIcon from '@/components/icons/McpServerIcon';
 import { apiProductApi } from '@/lib/api';
 import ApiProductFormModal from '@/components/api-product/ApiProductFormModal';
@@ -40,6 +40,8 @@ const ProductCard = memo(({ product, onNavigate, handleRefresh, onEdit }: {
       return <McpServerIcon style={{ fontSize: '16px', width: '16px', height: '16px' }} />
     } else if (type === "AGENT_API") {
       return <RobotOutlined style={{ fontSize: '16px', width: '16px', height: '16px' }} />
+    } else if (type === "MODEL_API") {
+      return <BulbOutlined style={{ fontSize: '16px', width: '16px', height: '16px' }} />
     }
     return <ApiOutlined style={{ fontSize: '16px', width: '16px', height: '16px' }} />
   }
@@ -108,12 +110,15 @@ const ProductCard = memo(({ product, onNavigate, handleRefresh, onEdit }: {
                   <ApiOutlined className="text-blue-500 mr-1" style={{fontSize: '12px', width: '12px', height: '12px'}} />
                 ) : product.type === "AGENT_API" ? (
                   <RobotOutlined className="text-gray-600 mr-1" style={{fontSize: '12px', width: '12px', height: '12px'}} />
+                ) : product.type === "MODEL_API" ? (
+                  <BulbOutlined className="text-gray-600 mr-1" style={{fontSize: '12px', width: '12px', height: '12px'}} />
                 ) : (
                   <McpServerIcon className="text-black mr-1" style={{fontSize: '12px', width: '12px', height: '12px'}} />
                 )}
                 <span className="text-xs text-gray-700">
                   {product.type === "REST_API" ? "REST API" : 
-                   product.type === "AGENT_API" ? "Agent API" : "MCP Server"}
+                   product.type === "AGENT_API" ? "Agent API" : 
+                   product.type === "MODEL_API" ? "Model API" : "MCP Server"}
                 </span>
               </div>
               <div className="flex items-center">
@@ -196,6 +201,7 @@ export default function ApiProducts() {
     { label: 'REST API', value: 'REST_API' },
     { label: 'MCP Server', value: 'MCP_SERVER' },
     { label: 'Agent API', value: 'AGENT_API' },
+    { label: 'Model API', value: 'MODEL_API' },
   ];
 
   // 搜索类型选项
