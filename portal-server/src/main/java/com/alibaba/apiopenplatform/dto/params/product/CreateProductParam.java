@@ -51,6 +51,8 @@ public class CreateProductParam implements InputConverter<Product> {
     private String category;
 
     private Boolean autoApprove;
+    
+    private String[] categories;
 
     @AssertTrue(message = "Icon大小不能超过16KB")
     public boolean checkIcon() {

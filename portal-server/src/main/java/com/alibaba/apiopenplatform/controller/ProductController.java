@@ -33,6 +33,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Arrays;
+import java.util.List;
 
 @Tag(name = "API产品管理", description = "提供API产品的创建、更新、删除、查询、订阅等管理功能")
 @RestController
@@ -42,12 +44,19 @@ import javax.validation.Valid;
 public class ProductController {
 
     private final ProductService productService;
-
+    
     @Operation(summary = "创建API产品")
     @PostMapping
     @AdminAuth
     public ProductResult createProduct(@RequestBody @Valid CreateProductParam param) {
-        return productService.createProduct(param);
+        ProductResult result = productService.createProduct(param);
+        
+        // 如果提供了类别信息，则设置产品类别
+        if (param.getCategories() != null && param.getCategories().length > 0) {
+            productService.setProductCategories(result.getProductId(), Arrays.asList(param.getCategories()));
+        }
+        
+        return result;
     }
 
     @Operation(summary = "获取API产品列表")
@@ -67,7 +76,14 @@ public class ProductController {
     @PutMapping("/{productId}")
     @AdminAuth
     public ProductResult updateProduct(@PathVariable String productId, @RequestBody @Valid UpdateProductParam param) {
-        return productService.updateProduct(productId, param);
+        ProductResult result = productService.updateProduct(productId, param);
+        
+        // 如果提供了类别信息，则设置产品类别
+        if (param.getCategories() != null && param.getCategories().length > 0) {
+            productService.setProductCategories(result.getProductId(), Arrays.asList(param.getCategories()));
+        }
+        
+        return result;
     }
 
     @Operation(summary = "发布API产品")
@@ -132,5 +148,18 @@ public class ProductController {
             QueryProductSubscriptionParam param,
             Pageable pageable) {
         return productService.listProductSubscriptions(productId, param, pageable);
+    }
+
+    @Operation(summary = "设置产品类别")
+    @PostMapping("/{productId}/categories")
+    @AdminAuth
+    public void setProductCategories(@PathVariable String productId, @RequestBody List<String> categoryIds) {
+        productService.setProductCategories(productId, categoryIds);
+    }
+
+    @Operation(summary = "获取产品关联的类别")
+    @GetMapping("/{productId}/categories")
+    public List<ProductCategoryResult> getProductCategories(@PathVariable String productId) {
+        return productService.getProductCategories(productId);
     }
 }

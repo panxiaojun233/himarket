@@ -10,10 +10,13 @@ import {
   Switch,
   Radio,
   Space,
+  Checkbox,
 } from "antd";
 import { CameraOutlined } from "@ant-design/icons";
 import { apiProductApi } from "@/lib/api";
+import { getProductCategories } from "@/lib/productCategoryApi";
 import type { ApiProduct } from "@/types/api-product";
+import type { ProductCategory } from "@/types/product-category";
 
 interface ApiProductFormModalProps {
   visible: boolean;
@@ -36,10 +39,25 @@ export default function ApiProductFormModal({
   const [previewImage, setPreviewImage] = useState("");
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [iconMode, setIconMode] = useState<'BASE64' | 'URL'>('URL');
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isEditMode = !!productId;
+
+  // 获取产品类别列表
+  const fetchProductCategories = async () => {
+    try {
+      const response = await getProductCategories();
+      setProductCategories(response.data);
+    } catch (error) {
+      console.error("获取产品类别失败:", error);
+      message.error("获取产品类别失败");
+    }
+  };
 
   // 初始化时加载已有数据
   useEffect(() => {
+    fetchProductCategories();
+    
     if (visible && isEditMode && initialData && initialData.name) {
       setTimeout(() => {
         // 1. 先设置所有字段
@@ -94,6 +112,16 @@ export default function ApiProductFormModal({
           }
         }
       }
+      
+      // 获取产品已关联的类别
+      if (initialData.productId) {
+        apiProductApi.getProductCategories(initialData.productId).then((response) => {
+          const categoryIds = response.data.map((category: any) => category.categoryId);
+          form.setFieldsValue({ categories: categoryIds });
+        }).catch((error) => {
+          console.error("获取产品关联类别失败:", error);
+        });
+      }
     } else if (visible && !isEditMode) {
       // 新建模式下清空表单
       form.resetFields();
@@ -143,6 +171,7 @@ export default function ApiProductFormModal({
     setPreviewImage("");
     setPreviewOpen(false);
     setIconMode('URL');
+    setSelectedCategoryIds([]);
   };
 
   const handleCancel = () => {
@@ -155,7 +184,7 @@ export default function ApiProductFormModal({
       const values = await form.validateFields();
       setLoading(true);
 
-      const { icon, iconUrl, ...otherValues } = values;
+      const { icon, iconUrl, categories, ...otherValues } = values;
 
       if (isEditMode) {
         let params = { ...otherValues };
@@ -176,7 +205,13 @@ export default function ApiProductFormModal({
           delete params.icon;
         }
         
+        // 将类别信息合并到参数中
+        if (categories) {
+          params.categories = categories;
+        }
+        
         await apiProductApi.updateApiProduct(productId!, params);
+        
         message.success("API Product 更新成功");
       } else {
         let params = { ...otherValues };
@@ -194,7 +229,13 @@ export default function ApiProductFormModal({
           };
         }
         
+        // 将类别信息合并到参数中
+        if (categories) {
+          params.categories = categories;
+        }
+        
         await apiProductApi.createApiProduct(params);
+        
         message.success("API Product 创建成功");
       }
 
@@ -243,6 +284,20 @@ export default function ApiProductFormModal({
             <Select.Option value="REST_API">REST API</Select.Option>
             <Select.Option value="MCP_SERVER">MCP Server</Select.Option>
           </Select>
+        </Form.Item>
+
+        <Form.Item
+          label="产品类别"
+          name="categories"
+        >
+          <Select
+            mode="multiple"
+            placeholder="请选择产品类别"
+            options={productCategories.map(category => ({
+              label: category.name,
+              value: category.categoryId
+            }))}
+          />
         </Form.Item>
 
         <Form.Item

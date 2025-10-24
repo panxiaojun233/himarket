@@ -17,24 +17,17 @@
  * under the License.
  */
 
-package com.alibaba.apiopenplatform.dto.params.product;
+package com.alibaba.apiopenplatform.repository;
 
-import com.alibaba.apiopenplatform.support.enums.ProductStatus;
-import com.alibaba.apiopenplatform.support.enums.ProductType;
-import lombok.Data;
+import java.util.Optional;
 
-import java.util.List;
+import com.alibaba.apiopenplatform.entity.ProductCategory;
 
-@Data
-public class QueryProductParam {
+import org.springframework.stereotype.Repository;
 
-    private String portalId;
+@Repository
+public interface ProductCategoryRepository extends BaseRepository<ProductCategory, Long> {
+    Optional<ProductCategory> findByCode(String code);
 
-    private ProductType type;
-
-    private String name;
-
-    private ProductStatus status;
-    
-    private List<String> categoryIds; // 支持通过类别ID列表查询
+    Optional<ProductCategory> findByCategoryId(String categoryId);
 }
