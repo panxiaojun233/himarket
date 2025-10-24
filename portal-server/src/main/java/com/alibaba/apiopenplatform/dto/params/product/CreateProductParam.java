@@ -19,6 +19,8 @@
 
 package com.alibaba.apiopenplatform.dto.params.product;
 
+import java.util.List;
+
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.apiopenplatform.dto.converter.InputConverter;
 import com.alibaba.apiopenplatform.entity.Product;
@@ -52,7 +54,7 @@ public class CreateProductParam implements InputConverter<Product> {
 
     private Boolean autoApprove;
     
-    private String[] categories;
+    private List<String> categories;
 
     @AssertTrue(message = "Icon大小不能超过16KB")
     public boolean checkIcon() {

@@ -19,22 +19,38 @@
 
 package com.alibaba.apiopenplatform.controller;
 
+import java.util.List;
+
+import javax.validation.Valid;
+
 import com.alibaba.apiopenplatform.core.annotation.AdminAuth;
 import com.alibaba.apiopenplatform.core.annotation.AdminOrDeveloperAuth;
-import com.alibaba.apiopenplatform.dto.params.product.*;
+import com.alibaba.apiopenplatform.dto.params.product.CreateProductParam;
 import com.alibaba.apiopenplatform.dto.params.product.CreateProductRefParam;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.params.product.QueryProductParam;
+import com.alibaba.apiopenplatform.dto.params.product.QueryProductSubscriptionParam;
+import com.alibaba.apiopenplatform.dto.params.product.UpdateProductParam;
+import com.alibaba.apiopenplatform.dto.result.PageResult;
+import com.alibaba.apiopenplatform.dto.result.ProductCategoryResult;
+import com.alibaba.apiopenplatform.dto.result.ProductPublicationResult;
+import com.alibaba.apiopenplatform.dto.result.ProductRefResult;
+import com.alibaba.apiopenplatform.dto.result.ProductResult;
+import com.alibaba.apiopenplatform.dto.result.SubscriptionResult;
 import com.alibaba.apiopenplatform.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
-import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "API产品管理", description = "提供API产品的创建、更新、删除、查询、订阅等管理功能")
 @RestController
@@ -44,18 +60,12 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
-    
+
     @Operation(summary = "创建API产品")
     @PostMapping
     @AdminAuth
     public ProductResult createProduct(@RequestBody @Valid CreateProductParam param) {
         ProductResult result = productService.createProduct(param);
-        
-        // 如果提供了类别信息，则设置产品类别
-        if (param.getCategories() != null && param.getCategories().length > 0) {
-            productService.setProductCategories(result.getProductId(), Arrays.asList(param.getCategories()));
-        }
-        
         return result;
     }
 
@@ -77,12 +87,6 @@ public class ProductController {
     @AdminAuth
     public ProductResult updateProduct(@PathVariable String productId, @RequestBody @Valid UpdateProductParam param) {
         ProductResult result = productService.updateProduct(productId, param);
-        
-        // 如果提供了类别信息，则设置产品类别
-        if (param.getCategories() != null && param.getCategories().length > 0) {
-            productService.setProductCategories(result.getProductId(), Arrays.asList(param.getCategories()));
-        }
-        
         return result;
     }
 

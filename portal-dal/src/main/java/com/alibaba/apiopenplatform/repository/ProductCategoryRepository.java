@@ -19,6 +19,7 @@
 
 package com.alibaba.apiopenplatform.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.alibaba.apiopenplatform.entity.ProductCategory;
@@ -30,4 +31,6 @@ public interface ProductCategoryRepository extends BaseRepository<ProductCategor
     Optional<ProductCategory> findByCode(String code);
 
     Optional<ProductCategory> findByCategoryId(String categoryId);
+
+    List<ProductCategory> findByCategoryIdIn(List<String> categoryIds);
 }
