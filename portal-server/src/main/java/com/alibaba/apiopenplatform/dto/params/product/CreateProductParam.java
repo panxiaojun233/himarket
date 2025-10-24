@@ -50,8 +50,6 @@ public class CreateProductParam implements InputConverter<Product> {
 
     private ProductIcon icon;
 
-    private String category;
-
     private Boolean autoApprove;
     
     private List<String> categories;

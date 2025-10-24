@@ -93,13 +93,9 @@ const ProductCard = memo(({ product, onNavigate, handleRefresh, onEdit }: {
           <div>
             <h3 className="text-lg font-semibold">{product.name}</h3>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              {product.categories && product.categories.length > 0 ? (
-                product.categories.map(category => (
-                  <Badge key={category.categoryId} color="green" text={category.name} />
-                ))
-              ) : (
-                product.category && <Badge color="green" text={product.category} />
-              )}
+              {product.categories?.map(category => (
+                <Badge key={category.categoryId} color="green" text={category.name} />
+              ))}
               <div className="flex items-center">
                 {product.type === "REST_API" ? (
                   <ApiOutlined className="text-blue-500 mr-1" style={{fontSize: '12px', width: '12px', height: '12px'}} />

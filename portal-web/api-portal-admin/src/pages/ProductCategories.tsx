@@ -46,7 +46,7 @@ export default function ProductCategories() {
   };
 
   // 处理页面大小变化
-  const handlePageSizeChange = (current: number, size: number) => {
+  const handlePageSizeChange = (size: number) => {
     setPagination({ ...pagination, pageSize: size });
     fetchCategories(1, size);
   };

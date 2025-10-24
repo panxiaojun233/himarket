@@ -491,9 +491,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public void setProductCategories(String productId, List<String> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) {
-            return;
-        }
         // 验证产品是否存在
         existsProduct(productId);
 

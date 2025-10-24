@@ -10,7 +10,6 @@ import {
   Switch,
   Radio,
   Space,
-  Checkbox,
 } from "antd";
 import { CameraOutlined } from "@ant-design/icons";
 import { apiProductApi } from "@/lib/api";
@@ -40,7 +39,6 @@ export default function ApiProductFormModal({
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [iconMode, setIconMode] = useState<'BASE64' | 'URL'>('URL');
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const isEditMode = !!productId;
 
   // 获取产品类别列表
@@ -171,7 +169,6 @@ export default function ApiProductFormModal({
     setPreviewImage("");
     setPreviewOpen(false);
     setIconMode('URL');
-    setSelectedCategoryIds([]);
   };
 
   const handleCancel = () => {

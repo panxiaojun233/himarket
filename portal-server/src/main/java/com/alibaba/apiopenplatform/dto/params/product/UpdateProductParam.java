@@ -45,8 +45,6 @@ public class UpdateProductParam implements InputConverter<Product> {
 
     private ProductIcon icon;
 
-    private String category;
-
     private Boolean autoApprove;
     
     private List<String> categories;
