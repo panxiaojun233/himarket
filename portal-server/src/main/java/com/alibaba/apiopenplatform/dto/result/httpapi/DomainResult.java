@@ -18,22 +18,21 @@
  */
 
 
-package com.alibaba.apiopenplatform.service;
+package com.alibaba.apiopenplatform.dto.result.httpapi;
 
-import com.alibaba.apiopenplatform.dto.result.AuthResult;
+import lombok.Builder;
+import lombok.Data;
 
 /**
  * @author zh
  */
-public interface OAuth2Service {
+@Data
+@Builder
+public class DomainResult {
 
-    /**
-     * JWT Bearer认证
-     *
-     * @param grantType
-     * @param jwtToken
-     * @return
-     */
-    AuthResult authenticate(String grantType, String jwtToken);
+    private String domain;
 
+    private String protocol;
+
+    private String networkType ;
 }

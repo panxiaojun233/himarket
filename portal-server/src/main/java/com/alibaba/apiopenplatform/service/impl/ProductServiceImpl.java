@@ -122,7 +122,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PageResult<ProductResult> listProducts(QueryProductParam param, Pageable pageable) {
-        log.info("zhaoh-test-listProducts-start");
         if (contextHolder.isDeveloper()) {
             param.setPortalId(contextHolder.getPortal());
         }

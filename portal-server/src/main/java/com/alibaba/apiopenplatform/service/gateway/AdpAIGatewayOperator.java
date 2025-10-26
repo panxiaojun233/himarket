@@ -1,3 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+
 package com.alibaba.apiopenplatform.service.gateway;
 
 import com.alibaba.apiopenplatform.core.exception.BusinessException;
@@ -5,6 +25,7 @@ import com.alibaba.apiopenplatform.core.exception.ErrorCode;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAdpAIGatewayParam;
 import com.alibaba.apiopenplatform.dto.result.*;
 import com.alibaba.apiopenplatform.dto.result.AdpGatewayInstanceResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.DomainResult;
 import com.alibaba.apiopenplatform.entity.Consumer;
 import com.alibaba.apiopenplatform.entity.ConsumerCredential;
 import com.alibaba.apiopenplatform.entity.Gateway;
@@ -17,6 +38,7 @@ import com.alibaba.apiopenplatform.support.gateway.GatewayConfig;
 import com.alibaba.apiopenplatform.support.product.APIGRefConfig;
 import com.alibaba.apiopenplatform.dto.result.MCPConfigResult;
 import cn.hutool.json.JSONUtil;
+import com.aliyun.sdk.service.apig20240327.models.HttpApiApiInfo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -155,14 +177,14 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         serverConfig.setPath("/" + data.getName());
         
         // 获取网关实例访问信息并设置域名信息
-        List<MCPConfigResult.Domain> domains = getGatewayAccessDomains(data.getGwInstanceId(), config);
+        List<DomainResult> domains = getGatewayAccessDomains(data.getGwInstanceId(), config);
         if (domains != null && !domains.isEmpty()) {
             serverConfig.setDomains(domains);
         } else {
             // 如果无法获取网关访问信息，则使用原有的services信息作为备选
             if (data.getServices() != null && !data.getServices().isEmpty()) {
-                List<MCPConfigResult.Domain> fallbackDomains = data.getServices().stream()
-                        .map(domain -> MCPConfigResult.Domain.builder()
+                List<DomainResult> fallbackDomains = data.getServices().stream()
+                        .map(domain -> DomainResult.builder()
                                 .domain(domain.getName() + ":" + domain.getPort())
                                 .protocol("http")
                                 .build())
@@ -188,7 +210,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     /**
      * 获取网关实例的访问信息并构建域名列表
      */
-    private List<MCPConfigResult.Domain> getGatewayAccessDomains(String gwInstanceId, AdpAIGatewayConfig config) {
+    private List<DomainResult> getGatewayAccessDomains(String gwInstanceId, AdpAIGatewayConfig config) {
         AdpAIGatewayClient client = new AdpAIGatewayClient(config);
         try {
             String url = client.getFullUrl("/gatewayInstance/getInstanceInfo");
@@ -229,7 +251,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     /**
      * 根据网关实例访问信息构建域名列表
      */
-    private List<MCPConfigResult.Domain> buildDomainsFromAccessInfo(AdpGatewayInstanceResult.AdpGatewayInstanceData data) {
+    private List<DomainResult> buildDomainsFromAccessInfo(AdpGatewayInstanceResult.AdpGatewayInstanceData data) {
         // 兼容 listInstances 调用：取第一条记录的 accessMode
         if (data != null && data.getRecords() != null && !data.getRecords().isEmpty()) {
             AdpGatewayInstanceResult.AdpGatewayInstance instance = data.getRecords().get(0);
@@ -240,8 +262,8 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         return new ArrayList<>();
     }
 
-    private List<MCPConfigResult.Domain> buildDomainsFromAccessModes(List<AdpGatewayInstanceResult.AccessMode> accessModes) {
-        List<MCPConfigResult.Domain> domains = new ArrayList<>();
+    private List<DomainResult> buildDomainsFromAccessModes(List<AdpGatewayInstanceResult.AccessMode> accessModes) {
+        List<DomainResult> domains = new ArrayList<>();
         if (accessModes == null || accessModes.isEmpty()) { return domains; }
         AdpGatewayInstanceResult.AccessMode accessMode = accessModes.get(0);
 
@@ -250,7 +272,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             if (accessMode.getExternalIps() != null && !accessMode.getExternalIps().isEmpty()) {
                 for (String externalIp : accessMode.getExternalIps()) {
                     if (externalIp == null || externalIp.isEmpty()) { continue; }
-                    MCPConfigResult.Domain domain = MCPConfigResult.Domain.builder()
+                    DomainResult domain = DomainResult.builder()
                             .domain(externalIp + ":80")
                             .protocol("http")
                             .build();
@@ -271,7 +293,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                         String[] parts = portMapping.split(":");
                         if (parts.length >= 2) {
                             String nodePort = parts[1].split("/")[0];
-                            MCPConfigResult.Domain domain = MCPConfigResult.Domain.builder()
+                            DomainResult domain = DomainResult.builder()
                                     .domain(ip + ":" + nodePort)
                                     .protocol("http")
                                     .build();
@@ -286,7 +308,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         if (domains.isEmpty() && accessMode.getExternalIps() != null && !accessMode.getExternalIps().isEmpty()) {
             for (String externalIp : accessMode.getExternalIps()) {
                 if (externalIp == null || externalIp.isEmpty()) { continue; }
-                MCPConfigResult.Domain domain = MCPConfigResult.Domain.builder()
+                DomainResult domain = DomainResult.builder()
                         .domain(externalIp + ":80")
                         .protocol("http")
                         .build();
@@ -680,7 +702,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     }
 
     @Override
-    public APIResult fetchAPI(Gateway gateway, String apiId) {
+    public HttpApiApiInfo fetchAPI(Gateway gateway, String apiId) {
         return null;
     }
 
