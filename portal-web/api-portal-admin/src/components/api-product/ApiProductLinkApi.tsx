@@ -70,6 +70,11 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
   }, [apiProduct])
 
   // 生成连接配置
+  // 当产品切换时重置域名选择索引
+  useEffect(() => {
+    setSelectedDomainIndex(0);
+  }, [apiProduct.productId]);
+
   useEffect(() => {
     if (apiProduct.type === 'MCP_SERVER' && apiProduct.mcpConfig) {
       // 获取关联的MCP Server名称
@@ -721,9 +726,6 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                   {/* 域名选择器 */}
                   {apiProduct.mcpConfig?.mcpServerConfig?.domains && apiProduct.mcpConfig.mcpServerConfig.domains.length > 1 && (
                     <div className="mb-2">
-                      <div className="flex items-center mb-2">
-                        <span className="text-xs text-gray-900">域名</span>
-                      </div>
                       <Select
                         value={selectedDomainIndex}
                         onChange={setSelectedDomainIndex}

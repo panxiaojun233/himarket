@@ -126,8 +126,8 @@ function McpDetail() {
     }
 
     // HTTP/SSE 模式
-    if (domains && domains.length > 0 && path) {
-      const domain = domains[0];
+    if (domains && domains.length > 0 && path && domainIndex < domains.length) {
+      const domain = domains[domainIndex];
       const formattedDomain = formatDomainWithPort(domain.domain, domain.protocol);
       const baseUrl = `${domain.protocol}://${formattedDomain}`;
       let endpoint = `${baseUrl}${path}`;
@@ -575,9 +575,6 @@ function McpDetail() {
                 {/* 域名选择器 */}
                 {mcpConfig?.mcpServerConfig?.domains && mcpConfig.mcpServerConfig.domains.length > 1 && (
                   <div className="mb-2">
-                    <div className="flex items-center mb-2">
-                      <span className="text-xs text-gray-900">域名</span>
-                    </div>
                     <Select
                       value={selectedDomainIndex}
                       onChange={setSelectedDomainIndex}
