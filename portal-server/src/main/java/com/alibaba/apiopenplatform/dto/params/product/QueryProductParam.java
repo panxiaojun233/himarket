@@ -36,5 +36,5 @@ public class QueryProductParam {
 
     private ProductStatus status;
     
-    private List<String> categoryIds; // 支持通过类别ID列表查询
+    private List<String> categoryIds;
 }

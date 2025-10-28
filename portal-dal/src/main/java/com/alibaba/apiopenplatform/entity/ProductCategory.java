@@ -19,14 +19,10 @@
 
 package com.alibaba.apiopenplatform.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 
+import com.alibaba.apiopenplatform.converter.IconConverter;
+import com.alibaba.apiopenplatform.support.product.Icon;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -34,7 +30,6 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "product_category",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"code"}, name = "uk_code"),
                 @UniqueConstraint(columnNames = {"category_id"}, name = "uk_category_id")
         })
 @Data
@@ -46,12 +41,13 @@ public class ProductCategory extends BaseEntity {
     @Column(name = "category_id", length = 64, nullable = false)
     private String categoryId;
 
-    @Column(name = "code", length = 64, nullable = false)
-    private String code;
-
     @Column(name = "name", length = 64, nullable = false)
     private String name;
 
     @Column(name = "description", length = 256)
     private String description;
+
+    @Column(name = "icon", columnDefinition = "json")
+    @Convert(converter = IconConverter.class)
+    private Icon icon;
 }

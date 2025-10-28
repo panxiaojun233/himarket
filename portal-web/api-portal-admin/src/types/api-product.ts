@@ -78,7 +78,7 @@ export interface ApiProduct {
   productId: string;
   name: string;
   description: string;
-  type: 'REST_API' | 'MCP_SERVER';
+  type: 'REST_API' | 'MCP_SERVER' | 'AGENT_API' | 'MODEL_API';
   status: 'PENDING' | 'READY' | 'PUBLISHED' | string;
   createAt: string;
   enableConsumerAuth?: boolean;

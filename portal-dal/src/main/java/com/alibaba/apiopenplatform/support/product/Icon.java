@@ -1,15 +1,15 @@
 package com.alibaba.apiopenplatform.support.product;
 
-import com.alibaba.apiopenplatform.support.enums.ProductIconType;
+import com.alibaba.apiopenplatform.support.enums.IconType;
 import lombok.Data;
 
 /**
  * @author zh
  */
 @Data
-public class ProductIcon {
+public class Icon {
 
-    private ProductIconType type;
+    private IconType type;
 
     private String value;
 }

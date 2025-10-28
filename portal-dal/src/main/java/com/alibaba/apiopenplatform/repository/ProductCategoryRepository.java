@@ -19,18 +19,20 @@
 
 package com.alibaba.apiopenplatform.repository;
 
+import com.alibaba.apiopenplatform.entity.ProductCategory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 import java.util.Optional;
 
-import com.alibaba.apiopenplatform.entity.ProductCategory;
-
-import org.springframework.stereotype.Repository;
-
 @Repository
 public interface ProductCategoryRepository extends BaseRepository<ProductCategory, Long> {
-    Optional<ProductCategory> findByCode(String code);
 
     Optional<ProductCategory> findByCategoryId(String categoryId);
+
+    Optional<ProductCategory> findByName(String name);
 
     List<ProductCategory> findByCategoryIdIn(List<String> categoryIds);
 }

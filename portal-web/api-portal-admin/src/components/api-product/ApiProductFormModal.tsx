@@ -45,7 +45,7 @@ export default function ApiProductFormModal({
   const fetchProductCategories = async () => {
     try {
       const response = await getProductCategories();
-      setProductCategories(response.data);
+      setProductCategories(response.data.content || []);
     } catch (error) {
       console.error("获取产品类别失败:", error);
       message.error("获取产品类别失败");
@@ -286,15 +286,68 @@ export default function ApiProductFormModal({
         <Form.Item
           label="产品类别"
           name="categories"
+          tooltip="选择适合的类别，帮助用户更好地发现您的产品"
         >
           <Select
             mode="multiple"
-            placeholder="请选择产品类别"
-            options={productCategories.map(category => ({
-              label: category.name,
-              value: category.categoryId
-            }))}
-          />
+            placeholder="请选择产品类别（可多选）"
+            maxTagCount={3}
+            maxTagTextLength={10}
+            optionLabelProp="label"
+            filterOption={(input, option) =>
+              (option?.searchText || '').toLowerCase().includes(input.toLowerCase())
+            }
+          >
+            {productCategories.map(category => {
+              // 渲染图标
+              let iconElement = null;
+              if (category.icon) {
+                if (category.icon.type === 'URL') {
+                  iconElement = (
+                    <img 
+                      src={category.icon.value} 
+                      alt="" 
+                      className="w-4 h-4 mr-2 rounded" 
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  );
+                } else if (category.icon.value.length <= 10 && /\p{Emoji}/u.test(category.icon.value)) {
+                  iconElement = <span className="mr-2">{category.icon.value}</span>;
+                } else {
+                  iconElement = (
+                    <img 
+                      src={category.icon.value} 
+                      alt="" 
+                      className="w-4 h-4 mr-2 rounded" 
+                    />
+                  );
+                }
+              }
+
+              return (
+                <Select.Option
+                  key={category.categoryId}
+                  value={category.categoryId}
+                  label={category.name}
+                  searchText={`${category.name} ${category.description || ''}`}
+                >
+                  <div className="flex items-center">
+                    {iconElement}
+                    <div>
+                      <div className="font-medium">{category.name}</div>
+                      {category.description && (
+                        <div className="text-xs text-gray-500 truncate">
+                          {category.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Select.Option>
+              );
+            })}
+          </Select>
         </Form.Item>
 
         <Form.Item

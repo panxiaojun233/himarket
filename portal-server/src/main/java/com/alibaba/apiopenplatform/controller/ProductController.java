@@ -37,6 +37,7 @@ import com.alibaba.apiopenplatform.dto.result.ProductRefResult;
 import com.alibaba.apiopenplatform.dto.result.ProductResult;
 import com.alibaba.apiopenplatform.dto.result.SubscriptionResult;
 import com.alibaba.apiopenplatform.service.ProductService;
+import com.alibaba.apiopenplatform.service.ProductCategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +61,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductController {
 
     private final ProductService productService;
+    
+    private final ProductCategoryService productCategoryService;
 
     @Operation(summary = "创建API产品")
     @PostMapping
@@ -154,16 +157,17 @@ public class ProductController {
         return productService.listProductSubscriptions(productId, param, pageable);
     }
 
+    @Operation(summary = "获取产品关联的类别")
+    @GetMapping("/{productId}/categories")
+    @AdminOrDeveloperAuth
+    public List<ProductCategoryResult> getProductCategories(@PathVariable String productId) {
+        return productCategoryService.listCategoriesForProduct(productId);
+    }
+    
     @Operation(summary = "设置产品类别")
     @PostMapping("/{productId}/categories")
     @AdminAuth
     public void setProductCategories(@PathVariable String productId, @RequestBody List<String> categoryIds) {
         productService.setProductCategories(productId, categoryIds);
-    }
-
-    @Operation(summary = "获取产品关联的类别")
-    @GetMapping("/{productId}/categories")
-    public List<ProductCategoryResult> getProductCategories(@PathVariable String productId) {
-        return productService.getProductCategories(productId);
     }
 }

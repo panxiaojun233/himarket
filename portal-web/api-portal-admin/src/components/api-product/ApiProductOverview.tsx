@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Row, Col, Statistic, Button, message, Tag } from 'antd'
+import { Card, Row, Col, Statistic, Button, message } from 'antd'
 import { 
   ApiOutlined, 
   GlobalOutlined,
@@ -65,7 +65,7 @@ export function ApiProductOverview({ apiProduct, linkedService, onEdit }: ApiPro
       
       // 获取所有类别信息以显示类别名称
       const allCategoriesRes = await getProductCategories()
-      const allCategories = allCategoriesRes.data
+      const allCategories = allCategoriesRes.data.content || allCategoriesRes.data || []
       
       // 将产品关联的类别ID映射为类别名称
       const categoriesWithNames = categoriesData.map((category: any) => {
@@ -106,16 +106,15 @@ export function ApiProductOverview({ apiProduct, linkedService, onEdit }: ApiPro
         }
       >
         <div>
-            <div className="grid grid-cols-6 gap-8 items-center pt-0 pb-2">
+            <div className="grid grid-cols-6 gap-8 items-center pt-2 pb-2">
              <span className="text-xs text-gray-600">产品名称:</span>
              <span className="col-span-2 text-xs text-gray-900">{apiProduct.name}</span>
              <span className="text-xs text-gray-600">产品ID:</span>
               <div className="col-span-2 flex items-center gap-2">
                 <span className="text-xs text-gray-700">{apiProduct.productId}</span>
-                <Button 
-                  type="text" 
-                  size="small"
-                  icon={<CopyOutlined />}
+                <CopyOutlined 
+                  className="text-gray-400 hover:text-blue-600 cursor-pointer transition-colors ml-1" 
+                  style={{ fontSize: '12px' }}
                   onClick={async () => {
                     try {
                       await copyToClipboard(apiProduct.productId);
@@ -124,7 +123,6 @@ export function ApiProductOverview({ apiProduct, linkedService, onEdit }: ApiPro
                       message.error('复制失败，请手动复制');
                     }
                   }}
-                  className="h-auto p-1 min-w-0"
                 />
               </div>
             </div>
@@ -169,11 +167,21 @@ export function ApiProductOverview({ apiProduct, linkedService, onEdit }: ApiPro
               <span className="text-xs text-gray-600">产品类别:</span>
               <div className="col-span-5 text-xs text-gray-900">
                 {productCategories && productCategories.length > 0 ? (
-                  productCategories.map(category => (
-                    <Tag key={category.categoryId} color="blue">
-                      {category.name}
-                    </Tag>
-                  ))
+                  <span>
+                    {productCategories.map((category, index) => (
+                      <span key={category.categoryId}>
+                        <span 
+                          className="text-gray-900 hover:text-blue-600 cursor-pointer hover:underline transition-colors"
+                          onClick={() => navigate(`/product-categories/${category.categoryId}`)}
+                        >
+                          {category.name}
+                        </span>
+                        {index < productCategories.length - 1 && (
+                          <span className="text-gray-400 mx-2">|</span>
+                        )}
+                      </span>
+                    ))}
+                  </span>
                 ) : (
                   <span className="text-gray-400">未分类</span>
                 )}

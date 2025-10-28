@@ -20,7 +20,10 @@
 package com.alibaba.apiopenplatform.controller;
 
 import com.alibaba.apiopenplatform.core.annotation.AdminAuth;
-import com.alibaba.apiopenplatform.dto.params.product.CreateProductCategoryParam;
+import com.alibaba.apiopenplatform.core.annotation.AdminOrDeveloperAuth;
+import com.alibaba.apiopenplatform.dto.params.category.CreateProductCategoryParam;
+import com.alibaba.apiopenplatform.dto.params.category.QueryProductCategoryParam;
+import com.alibaba.apiopenplatform.dto.params.category.UpdateProductCategoryParam;
 import com.alibaba.apiopenplatform.dto.result.PageResult;
 import com.alibaba.apiopenplatform.dto.result.ProductCategoryResult;
 import com.alibaba.apiopenplatform.service.ProductCategoryService;
@@ -32,7 +35,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
 
 @Tag(name = "产品类别管理", description = "提供产品类别的创建、更新、删除、查询等管理功能")
 @RestController
@@ -50,23 +52,26 @@ public class ProductCategoryController {
         return productCategoryService.createProductCategory(param);
     }
     
-    @Operation(summary = "获取所有产品类别")
+    @Operation(summary = "获取产品类别列表")
     @GetMapping
-    public List<ProductCategoryResult> listProductCategories() {
-        return productCategoryService.listProductCategories();
-    }
-    
-    @Operation(summary = "分页获取产品类别列表")
-    @GetMapping("/page")
-    public PageResult<ProductCategoryResult> listProductCategoriesByPage(Pageable pageable) {
-        return productCategoryService.listProductCategoriesByPage(pageable);
+    @AdminOrDeveloperAuth
+    public PageResult<ProductCategoryResult> listProductCategories(QueryProductCategoryParam param, Pageable pageable) {
+        return productCategoryService.listProductCategories(param, pageable);
     }
     
     @Operation(summary = "更新产品类别")
     @PutMapping("/{categoryId}")
     @AdminAuth
-    public ProductCategoryResult updateProductCategory(@PathVariable String categoryId, @RequestBody @Valid CreateProductCategoryParam param) {
+    public ProductCategoryResult updateProductCategory(@PathVariable String categoryId,
+                                                       @RequestBody @Valid UpdateProductCategoryParam param) {
         return productCategoryService.updateProductCategory(categoryId, param);
+    }
+    
+    @Operation(summary = "获取产品类别详情")
+    @GetMapping("/{categoryId}")
+    @AdminOrDeveloperAuth
+    public ProductCategoryResult getProductCategory(@PathVariable String categoryId) {
+        return productCategoryService.getProductCategory(categoryId);
     }
     
     @Operation(summary = "删除产品类别")

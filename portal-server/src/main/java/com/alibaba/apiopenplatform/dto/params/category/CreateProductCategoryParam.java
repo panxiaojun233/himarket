@@ -17,27 +17,24 @@
  * under the License.
  */
 
-package com.alibaba.apiopenplatform.repository;
+package com.alibaba.apiopenplatform.dto.params.category;
 
-import com.alibaba.apiopenplatform.entity.ProductCategoryRelation;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.transaction.annotation.Transactional;
+import com.alibaba.apiopenplatform.dto.converter.InputConverter;
+import com.alibaba.apiopenplatform.entity.ProductCategory;
+import com.alibaba.apiopenplatform.support.product.Icon;
+import lombok.Data;
 
-import java.util.Collection;
-import java.util.List;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
-public interface ProductCategoryRelationRepository extends BaseRepository<ProductCategoryRelation, Long> {
+@Data
+public class CreateProductCategoryParam implements InputConverter<ProductCategory> {
 
-    List<ProductCategoryRelation> findByProductId(String productId);
+    @NotBlank(message = "类别名称不能为空")
+    private String name;
 
-    List<ProductCategoryRelation> findByCategoryId(String categoryId);
+    @Size(max = 500, message = "分类描述长度不能超过500个字符")
+    private String description;
 
-    boolean existsByCategoryId(String categoryId);
-
-    @Modifying
-    @Transactional
-    void deleteAllByProductId(String productId);
-
-    List<ProductCategoryRelation> findByCategoryIdIn(Collection<String> categoryId);
-
+    private Icon icon;
 }

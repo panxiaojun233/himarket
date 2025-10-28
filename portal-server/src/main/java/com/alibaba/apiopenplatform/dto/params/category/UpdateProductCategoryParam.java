@@ -17,21 +17,23 @@
  * under the License.
  */
 
-package com.alibaba.apiopenplatform.dto.params.product;
+package com.alibaba.apiopenplatform.dto.params.category;
 
 import com.alibaba.apiopenplatform.dto.converter.InputConverter;
 import com.alibaba.apiopenplatform.entity.ProductCategory;
+import com.alibaba.apiopenplatform.support.product.Icon;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 @Data
-public class CreateProductCategoryParam implements InputConverter<ProductCategory> {
-    @NotBlank(message = "类别代码不能为空")
-    private String code;
+public class UpdateProductCategoryParam implements InputConverter<ProductCategory> {
 
-    @NotBlank(message = "类别名称不能为空")
+    @Size(max = 100, message = "分类名称长度不能超过100个字符")
     private String name;
 
+    @Size(max = 500, message = "分类描述长度不能超过500个字符")
     private String description;
+
+    private Icon icon;
 }

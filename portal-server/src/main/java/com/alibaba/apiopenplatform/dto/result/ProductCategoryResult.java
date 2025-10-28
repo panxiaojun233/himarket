@@ -21,13 +21,23 @@ package com.alibaba.apiopenplatform.dto.result;
 
 import com.alibaba.apiopenplatform.dto.converter.OutputConverter;
 import com.alibaba.apiopenplatform.entity.ProductCategory;
+import com.alibaba.apiopenplatform.support.product.Icon;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 public class ProductCategoryResult implements OutputConverter<ProductCategoryResult, ProductCategory> {
-    private Long id;
+
     private String categoryId;
-    private String code;
+
     private String name;
+
     private String description;
+
+    private Icon icon;
+
+    private LocalDateTime createAt;
+
+    private LocalDateTime updatedAt;
 }

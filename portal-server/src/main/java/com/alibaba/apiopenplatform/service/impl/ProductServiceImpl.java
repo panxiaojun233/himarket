@@ -20,7 +20,6 @@
 package com.alibaba.apiopenplatform.service.impl;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,6 @@ import com.alibaba.apiopenplatform.dto.params.product.UpdateProductParam;
 import com.alibaba.apiopenplatform.dto.result.*;
 import com.alibaba.apiopenplatform.entity.Consumer;
 import com.alibaba.apiopenplatform.entity.Product;
-import com.alibaba.apiopenplatform.entity.ProductCategory;
 import com.alibaba.apiopenplatform.entity.ProductCategoryRelation;
 import com.alibaba.apiopenplatform.entity.ProductPublication;
 import com.alibaba.apiopenplatform.entity.ProductRef;
@@ -111,10 +109,6 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductCategoryService productCategoryService;
 
-    private final ProductCategoryRepository productCategoryRepository;
-
-    private final ProductCategoryRelationRepository productCategoryRelationRepository;
-
     @Override
     public ProductResult createProduct(CreateProductParam param) {
         productRepository.findByNameAndAdminId(param.getName(), contextHolder.getUser())
@@ -156,7 +150,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PageResult<ProductResult> listProducts(QueryProductParam param, Pageable pageable) {
-        log.info("zhaoh-test-listProducts-start");
         if (contextHolder.isDeveloper()) {
             param.setPortalId(contextHolder.getPortal());
         }
@@ -342,7 +335,7 @@ public class ProductServiceImpl implements ProductService {
 
     private void fullFillProduct(ProductResult product) {
         // 填充产品类别信息
-        product.setCategories(getProductCategories(product.getProductId()));
+        product.setCategories(productCategoryService.listCategoriesForProduct(product.getProductId()));
 
         productRefRepository.findFirstByProductId(product.getProductId())
                 .ifPresent(productRef -> {
@@ -395,18 +388,12 @@ public class ProductServiceImpl implements ProductService {
                 predicates.add(cb.like(root.get("name"), likePattern));
             }
 
-            // 支持通过类别ID列表查询产品
-            if (param.getCategoryIds() != null && !param.getCategoryIds().isEmpty()) {
-                // 直接使用categoryIds字符串列表
-                List<String> categoryIds = param.getCategoryIds();
-
-                if (!categoryIds.isEmpty()) {
-                    Subquery<String> subquery = query.subquery(String.class);
-                    Root<ProductCategoryRelation> relationRoot = subquery.from(ProductCategoryRelation.class);
-                    subquery.select(relationRoot.get("productId"))
-                            .where(relationRoot.get("categoryId").in(categoryIds));
-                    predicates.add(root.get("productId").in(subquery));
-                }
+            if (CollUtil.isNotEmpty(param.getCategoryIds())) {
+                Subquery<String> subquery = query.subquery(String.class);
+                Root<ProductCategoryRelation> relationRoot = subquery.from(ProductCategoryRelation.class);
+                subquery.select(relationRoot.get("productId"))
+                        .where(relationRoot.get("categoryId").in(param.getCategoryIds()));
+                predicates.add(root.get("productId").in(subquery));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -494,53 +481,13 @@ public class ProductServiceImpl implements ProductService {
         // 验证产品是否存在
         existsProduct(productId);
 
-        // 验证类别是否存在
-        for (String categoryId : categoryIds) {
-            boolean exists = productCategoryRepository.findByCategoryId(categoryId).isPresent();
-            if (!exists) {
-                throw new BusinessException(ErrorCode.NOT_FOUND, "产品类别不存在，ID: " + categoryId);
-            }
-        }
-
-        // 先删除原有的关联关系
-        productCategoryRelationRepository.deleteByProductId(productId);
-
-        // 添加新的关联关系（去重处理）
-        Set<String> distinctCategoryIds = new HashSet<>(categoryIds);
-        for (String categoryId : distinctCategoryIds) {
-            ProductCategoryRelation relation = new ProductCategoryRelation();
-            relation.setProductId(productId);
-            relation.setCategoryId(categoryId);
-            productCategoryRelationRepository.save(relation);
-        }
-    }
-
-    @Override
-    public List<ProductCategoryResult> getProductCategories(String productId) {
-        // 验证产品是否存在
-        existsProduct(productId);
-
-        // 获取产品关联的类别ID
-        List<ProductCategoryRelation> relations = productCategoryRelationRepository.findByProductId(productId);
-        List<String> categoryIds = relations.stream()
-                .map(ProductCategoryRelation::getCategoryId)
-                .collect(Collectors.toList());
-
-        if (categoryIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // 根据类别ID获取类别信息
-        List<ProductCategory> categories = productCategoryRepository.findByCategoryIdIn(categoryIds);
-
-        return categories.stream()
-                .map(category -> new ProductCategoryResult().convertFrom(category))
-                .collect(Collectors.toList());
+        productCategoryService.unbindProductCategories(productId);
+        productCategoryService.bindProductCategories(productId, categoryIds);
     }
 
     @Override
     public void clearProductCategoryRelations(String productId) {
-        productCategoryRelationRepository.deleteByProductId(productId);
+        productCategoryService.unbindProductCategories(productId);
     }
 
     private Specification<ProductSubscription> buildProductSubscriptionSpec(String productId, QueryProductSubscriptionParam param) {
