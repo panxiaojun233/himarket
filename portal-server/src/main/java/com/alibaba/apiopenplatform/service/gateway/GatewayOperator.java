@@ -31,6 +31,7 @@ import com.alibaba.apiopenplatform.service.gateway.client.ApsaraStackGatewayClie
 import com.alibaba.apiopenplatform.support.consumer.ConsumerAuthConfig;
 import com.alibaba.apiopenplatform.support.enums.GatewayType;
 import com.alibaba.apiopenplatform.support.gateway.GatewayConfig;
+import com.aliyun.sdk.service.apig20240327.models.HttpApiApiInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -71,7 +72,7 @@ public abstract class GatewayOperator<T> {
 
     abstract public void revokeConsumerAuthorization(Gateway gateway, String consumerId, ConsumerAuthConfig authConfig);
 
-    abstract public APIResult fetchAPI(Gateway gateway, String apiId);
+    abstract public HttpApiApiInfo fetchAPI(Gateway gateway, String apiId);
 
     abstract public GatewayType getGatewayType();
 
