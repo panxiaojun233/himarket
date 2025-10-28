@@ -183,7 +183,7 @@ export function ApiProductOverview({ apiProduct, linkedService, onEdit }: ApiPro
                     ))}
                   </span>
                 ) : (
-                  <span className="text-gray-400">未分类</span>
+                  <span className="text-gray-400">-</span>
                 )}
               </div>
             </div>

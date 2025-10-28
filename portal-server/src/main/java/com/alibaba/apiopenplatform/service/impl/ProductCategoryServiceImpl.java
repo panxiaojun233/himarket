@@ -31,11 +31,13 @@ import com.alibaba.apiopenplatform.dto.params.category.CreateProductCategoryPara
 import com.alibaba.apiopenplatform.dto.result.ProductCategoryResult;
 import com.alibaba.apiopenplatform.dto.result.PageResult;
 import com.alibaba.apiopenplatform.dto.result.ProductResult;
+import com.alibaba.apiopenplatform.entity.Product;
 import com.alibaba.apiopenplatform.entity.ProductCategory;
 import com.alibaba.apiopenplatform.entity.ProductCategoryRelation;
 import com.alibaba.apiopenplatform.repository.ProductCategoryRelationRepository;
 import com.alibaba.apiopenplatform.repository.ProductCategoryRepository;
 import com.alibaba.apiopenplatform.service.ProductCategoryService;
+import com.alibaba.apiopenplatform.support.enums.ProductType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,7 +45,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -182,6 +187,31 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
             if (StrUtil.isNotBlank(param.getName())) {
                 String likePattern = "%" + param.getName().toLowerCase() + "%";
                 predicates.add(cb.like(cb.lower(root.get("name")), likePattern));
+            }
+
+            if (StrUtil.isNotBlank(param.getProductType())) {
+                try {
+                    ProductType productType = ProductType.valueOf(param.getProductType());
+
+                    // Use EXISTS clause to ensure proper handling of empty results
+                    Subquery<Long> subquery = query.subquery(Long.class);
+                    Root<ProductCategoryRelation> relationRoot = subquery.from(ProductCategoryRelation.class);
+                    Root<Product> productRoot = subquery.from(Product.class);
+
+                    subquery.select(cb.literal(1L))
+                            .where(cb.and(
+                                    cb.equal(relationRoot.get("categoryId"), root.get("categoryId")),
+                                    cb.equal(relationRoot.get("productId"), productRoot.get("productId")),
+                                    cb.equal(productRoot.get("type"), productType)
+                            ));
+
+                    predicates.add(cb.exists(subquery));
+
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid product type provided: {}", param.getProductType());
+                    // Return no results for invalid product type
+                    predicates.add(cb.disjunction());
+                }
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

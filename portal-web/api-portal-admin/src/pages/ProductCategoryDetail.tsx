@@ -254,9 +254,10 @@ export default function ProductCategoryDetail() {
         </div>
       </Card>
 
-      <Divider orientation="left">
-        <span className="text-lg font-medium">该类别下的产品</span>
-      </Divider>
+      <div className="mb-6">
+        <span className="text-lg font-medium">Product列表</span>
+        <Divider className="mt-2" />
+      </div>
 
       {/* 产品列表 */}
       {productsLoading ? (

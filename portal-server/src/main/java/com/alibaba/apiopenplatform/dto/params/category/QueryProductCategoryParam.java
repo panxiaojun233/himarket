@@ -9,4 +9,6 @@ import lombok.Data;
 public class QueryProductCategoryParam {
 
     private String name;
+
+    private String productType;
 }
