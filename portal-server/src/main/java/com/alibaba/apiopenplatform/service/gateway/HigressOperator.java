@@ -114,7 +114,7 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
         c.setDomains(higressMCPConfig.getDomains().stream().map(domain -> {
                     HigressDomainConfig domainConfig = fetchDomain(gateway, domain);
                     String protocol = (domainConfig == null || "off".equalsIgnoreCase(domainConfig.getEnableHttps())) ? "http" : "https";
-                    return MCPConfigResult.Domain.builder()
+                    return DomainResult.builder()
                             .domain(domain)
                             .protocol(protocol)
                             .build();
