@@ -29,6 +29,7 @@ import com.alibaba.apiopenplatform.dto.result.common.PageResult;
 import com.alibaba.apiopenplatform.dto.result.gateway.AdpGatewayInstanceResult;
 import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
 import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
+import com.alibaba.apiopenplatform.dto.result.httpapi.DomainResult;
 import com.alibaba.apiopenplatform.dto.result.mcp.AdpMcpServerListResult;
 import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
 import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;

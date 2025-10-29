@@ -19,9 +19,7 @@
 
 package com.alibaba.apiopenplatform.service;
 
-import com.alibaba.apiopenplatform.dto.params.gateway.ImportGatewayParam;
-import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
-import com.alibaba.apiopenplatform.dto.params.gateway.QueryGatewayParam;
+import com.alibaba.apiopenplatform.dto.params.gateway.*;
 import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
 import com.alibaba.apiopenplatform.dto.result.common.PageResult;
 import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
@@ -45,7 +43,11 @@ public interface GatewayService {
      * @param size
      * @return
      */
-    PageResult<GatewayResult> fetchGateways(QueryAPIGParam param, int page, int size);
+    PageResult<GatewayResult> fetchAPIGGateways(QueryAPIGParam param, int page, int size);
+
+    PageResult<GatewayResult> fetchAdpGateways(QueryAdpAIGatewayParam param, int page, int size);
+
+    PageResult<GatewayResult> fetchApsaraGateways(QueryApsaraGatewayParam param, int page, int size);
 
     /**
      * 导入Gateway

@@ -20,11 +20,7 @@
 package com.alibaba.apiopenplatform.controller;
 
 import com.alibaba.apiopenplatform.core.annotation.AdminAuth;
-import com.alibaba.apiopenplatform.dto.params.gateway.ImportGatewayParam;
-import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
-import com.alibaba.apiopenplatform.dto.params.gateway.QueryAdpAIGatewayParam;
-import com.alibaba.apiopenplatform.dto.params.gateway.QueryGatewayParam;
-import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.params.gateway.*;
 import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
 import com.alibaba.apiopenplatform.dto.result.common.PageResult;
 import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
@@ -32,7 +28,6 @@ import com.alibaba.apiopenplatform.dto.result.mcp.GatewayMCPServerResult;
 import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
 import com.alibaba.apiopenplatform.dto.result.model.ModelAPIResult;
 import com.alibaba.apiopenplatform.service.GatewayService;
-import com.alibaba.apiopenplatform.service.AdpAIGatewayService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -49,15 +44,13 @@ import javax.validation.Valid;
 public class GatewayController {
 
     private final GatewayService gatewayService;
-    private final AdpAIGatewayService adpAIGatewayService;
-    private final ApsaraGatewayService apsaraGatewayService;
 
     @Operation(summary = "获取APIG Gateway列表")
     @GetMapping("/apig")
     public PageResult<GatewayResult> fetchGateways(@Valid QueryAPIGParam param,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "500") int size) {
-        return gatewayService.fetchGateways(param, page, size);
+        return gatewayService.fetchAPIGGateways(param, page, size);
     }
 
     @Operation(summary = "获取ADP AI Gateway列表")
@@ -65,7 +58,7 @@ public class GatewayController {
     public PageResult<GatewayResult> fetchAdpGateways(@RequestBody @Valid QueryAdpAIGatewayParam param,
                                                       @RequestParam(defaultValue = "1") int page,
                                                       @RequestParam(defaultValue = "500") int size) {
-        return adpAIGatewayService.fetchGateways(param, page, size);
+        return gatewayService.fetchAdpGateways(param, page, size);
     }
 
     @Operation(summary = "获取Apsara Gateway列表")
@@ -73,7 +66,7 @@ public class GatewayController {
     public PageResult<GatewayResult> fetchApsaraGateways(@RequestBody @Valid QueryApsaraGatewayParam param,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "500") int size) {
-        return apsaraGatewayService.fetchGateways(param, page, size);
+        return gatewayService.fetchApsaraGateways(param, page, size);
     }
 
     @Operation(summary = "获取导入的Gateway列表")
@@ -101,14 +94,6 @@ public class GatewayController {
                                                @RequestParam(defaultValue = "500") int size) {
         return gatewayService.fetchRESTAPIs(gatewayId, page, size);
     }
-
-//    @Operation(summary = "获取API列表")
-//    @GetMapping("/{gatewayId}/apis")
-//    public PageResult<APIResult> fetchAPIs(@PathVariable String gatewayId,
-//                                           @RequestParam String apiType,
-//                                           Pageable pageable) {
-//        return gatewayService.fetchAPIs(gatewayId, apiType, pageable);
-//    }
 
     @Operation(summary = "获取MCP Server列表")
     @GetMapping("/{gatewayId}/mcp-servers")

@@ -20,6 +20,7 @@
 package com.alibaba.apiopenplatform.dto.result.product;
 
 import com.alibaba.apiopenplatform.dto.converter.OutputConverter;
+import com.alibaba.apiopenplatform.dto.result.ProductCategoryResult;
 import com.alibaba.apiopenplatform.dto.result.httpapi.APIConfigResult;
 import com.alibaba.apiopenplatform.dto.result.agent.AgentConfigResult;
 import com.alibaba.apiopenplatform.dto.result.mcp.MCPConfigResult;

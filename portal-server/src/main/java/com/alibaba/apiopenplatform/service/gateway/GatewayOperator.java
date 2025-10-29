@@ -74,8 +74,9 @@ public abstract class GatewayOperator<T> {
 
     /**
      * 检查消费者是否存在于网关中
+     *
      * @param consumerId 消费者ID
-     * @param config 网关配置
+     * @param config     网关配置
      * @return 是否存在
      */
     abstract public boolean isConsumerExists(String consumerId, GatewayConfig config);
@@ -90,10 +91,11 @@ public abstract class GatewayOperator<T> {
 
     /**
      * 获取网关控制台仪表盘链接
+     *
      * @param gateway 网关实体
      * @return 仪表盘访问链接
      */
-    abstract public String getDashboard(Gateway gateway,String type);
+    abstract public String getDashboard(Gateway gateway, String type);
 
     @SuppressWarnings("unchecked")
     protected T getClient(Gateway gateway) {
@@ -105,18 +107,8 @@ public abstract class GatewayOperator<T> {
         );
     }
 
-//    @SuppressWarnings("unchecked")
-//    protected T getClient(Gateway gateway) {
-//        String clientKey = gateway.getGatewayType().isAPIG() ?
-//                gateway.getApigConfig().buildUniqueKey() : gateway.getHigressConfig().buildUniqueKey();
-//        return (T) clientCache.computeIfAbsent(
-//                clientKey,
-//                key -> createClient(gateway)
-//        );
-//    }
-
     /**
-     * 创建网关客户端
+     * Create a gateway client for the given gateway.
      */
     private GatewayClient createClient(Gateway gateway) {
         switch (gateway.getGatewayType()) {
@@ -135,7 +127,7 @@ public abstract class GatewayOperator<T> {
     }
 
     /**
-     * 移除网关客户端
+     * Remove a gateway client for the given gateway.
      */
     public void removeClient(String instanceId) {
         GatewayClient client = clientCache.remove(instanceId);

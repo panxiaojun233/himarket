@@ -27,6 +27,7 @@ import com.alibaba.apiopenplatform.core.annotation.AdminAuth;
 import com.alibaba.apiopenplatform.core.annotation.AdminOrDeveloperAuth;
 import com.alibaba.apiopenplatform.dto.params.product.CreateProductParam;
 import com.alibaba.apiopenplatform.dto.params.product.CreateProductRefParam;
+import com.alibaba.apiopenplatform.dto.result.ProductCategoryResult;
 import com.alibaba.apiopenplatform.dto.result.common.PageResult;
 import com.alibaba.apiopenplatform.dto.result.product.ProductPublicationResult;
 import com.alibaba.apiopenplatform.dto.result.product.ProductRefResult;
@@ -36,6 +37,7 @@ import com.alibaba.apiopenplatform.dto.params.product.QueryProductParam;
 import com.alibaba.apiopenplatform.dto.params.product.QueryProductSubscriptionParam;
 import com.alibaba.apiopenplatform.dto.params.product.UpdateProductParam;
 
+import com.alibaba.apiopenplatform.service.ProductCategoryService;
 import com.alibaba.apiopenplatform.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

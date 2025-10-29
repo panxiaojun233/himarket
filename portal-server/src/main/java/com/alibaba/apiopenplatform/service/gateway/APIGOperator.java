@@ -24,7 +24,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
-import com.alibaba.apiopenplatform.dto.result.*;
 import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
 import com.alibaba.apiopenplatform.dto.result.httpapi.APIConfigResult;
 import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
