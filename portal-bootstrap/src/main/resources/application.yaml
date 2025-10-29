@@ -25,14 +25,6 @@ db:
    username: ${DB_USERNAME:root}
    password: ${DB_PASSWORD:}
 
-
-#  -Ddb.host=rm-uf6pc9n1jzi2478l4eo.mysql.rds.aliyuncs.com \
-#  -Ddb.port=3306 \
-#  -Ddb.name=portal_db \
-#  -Ddb.username=portal_test \
-#  -Ddb.password=portal-Go \
-
-
 # Encryptor
 encryption:
   root-key: portalmanagement

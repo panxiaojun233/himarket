@@ -6,6 +6,7 @@ import com.alibaba.apiopenplatform.core.exception.BusinessException;
 import com.alibaba.apiopenplatform.core.exception.ErrorCode;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryApsaraGatewayParam;
 import com.alibaba.apiopenplatform.dto.result.*;
+import com.alibaba.apiopenplatform.dto.result.httpapi.DomainResult;
 import com.alibaba.apiopenplatform.entity.Consumer;
 import com.alibaba.apiopenplatform.entity.ConsumerCredential;
 import com.alibaba.apiopenplatform.entity.Gateway;
@@ -16,6 +17,7 @@ import com.alibaba.apiopenplatform.support.enums.GatewayType;
 import com.alibaba.apiopenplatform.support.gateway.GatewayConfig;
 import com.alibaba.apiopenplatform.support.gateway.ApsaraGatewayConfig;
 import com.alibaba.apiopenplatform.support.product.APIGRefConfig;
+import com.aliyun.sdk.service.apig20240327.models.HttpApiApiInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import com.aliyun.apsarastack.csb220230206.models.*;
@@ -138,14 +140,14 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
         serverConfig.setPath("/" + data.getName());
         
         // 获取网关实例访问信息并设置域名信息
-        List<MCPConfigResult.Domain> domains = getGatewayAccessDomains(gwInstanceId, config);
+        List<DomainResult> domains = getGatewayAccessDomains(gwInstanceId, config);
         if (domains != null && !domains.isEmpty()) {
             serverConfig.setDomains(domains);
         } else {
             // 如果无法获取网关访问信息，则使用原有的services信息作为备选
             if (data.getServices() != null && !data.getServices().isEmpty()) {
-                List<MCPConfigResult.Domain> fallbackDomains = data.getServices().stream()
-                        .map(service -> MCPConfigResult.Domain.builder()
+                List<DomainResult> fallbackDomains = data.getServices().stream()
+                        .map(service -> DomainResult.builder()
                                 .domain(service.getName() + ":" + service.getPort())
                                 .protocol("http")
                                 .build())
@@ -171,7 +173,7 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
     /**
      * 获取网关实例的访问信息并构建域名列表
      */
-    private List<MCPConfigResult.Domain> getGatewayAccessDomains(String gwInstanceId, ApsaraGatewayConfig config) {
+    private List<DomainResult> getGatewayAccessDomains(String gwInstanceId, ApsaraGatewayConfig config) {
         ApsaraStackGatewayClient client = new ApsaraStackGatewayClient(config);
         try {
             GetInstanceInfoResponse response = client.GetInstance(gwInstanceId);
@@ -199,9 +201,9 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
     /**
      * 根据网关实例访问信息构建域名列表
      */
-    private List<MCPConfigResult.Domain> buildDomainsFromAccessModes(
+    private List<DomainResult> buildDomainsFromAccessModes(
             List<GetInstanceInfoResponseBody.GetInstanceInfoResponseBodyDataAccessMode> accessModes) {
-        List<MCPConfigResult.Domain> domains = new ArrayList<>();
+        List<DomainResult> domains = new ArrayList<>();
         if (accessModes == null || accessModes.isEmpty()) {
             return domains;
         }
@@ -215,7 +217,7 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
                     if (externalIp == null || externalIp.isEmpty()) {
                         continue;
                     }
-                    MCPConfigResult.Domain domain = MCPConfigResult.Domain.builder()
+                    DomainResult domain = DomainResult.builder()
                             .domain(externalIp + ":80")
                             .protocol("http")
                             .build();
@@ -240,7 +242,7 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
                         String[] parts = portMapping.split(":");
                         if (parts.length >= 2) {
                             String nodePort = parts[1].split("/")[0];
-                            MCPConfigResult.Domain domain = MCPConfigResult.Domain.builder()
+                            DomainResult domain = DomainResult.builder()
                                     .domain(ip + ":" + nodePort)
                                     .protocol("http")
                                     .build();
@@ -257,7 +259,7 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
                 if (externalIp == null || externalIp.isEmpty()) {
                     continue;
                 }
-                MCPConfigResult.Domain domain = MCPConfigResult.Domain.builder()
+                DomainResult domain = DomainResult.builder()
                         .domain(externalIp + ":80")
                         .protocol("http")
                         .build();
@@ -591,7 +593,7 @@ public class ApsaraGatewayOperator extends GatewayOperator<ApsaraStackGatewayCli
     }
 
     @Override
-    public APIResult fetchAPI(Gateway gateway, String apiId) {
+    public HttpApiApiInfo fetchAPI(Gateway gateway, String apiId) {
         throw new UnsupportedOperationException("Apsara gateway not implemented for fetch api");
     }
 
