@@ -24,6 +24,7 @@ import com.alibaba.apiopenplatform.dto.params.gateway.ImportGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAPIGParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryAdpAIGatewayParam;
 import com.alibaba.apiopenplatform.dto.params.gateway.QueryGatewayParam;
+import com.alibaba.apiopenplatform.dto.result.*;
 import com.alibaba.apiopenplatform.dto.result.httpapi.APIResult;
 import com.alibaba.apiopenplatform.dto.result.common.PageResult;
 import com.alibaba.apiopenplatform.dto.result.gateway.GatewayResult;
@@ -49,6 +50,7 @@ public class GatewayController {
 
     private final GatewayService gatewayService;
     private final AdpAIGatewayService adpAIGatewayService;
+    private final ApsaraGatewayService apsaraGatewayService;
 
     @Operation(summary = "获取APIG Gateway列表")
     @GetMapping("/apig")
@@ -64,6 +66,14 @@ public class GatewayController {
                                                       @RequestParam(defaultValue = "1") int page,
                                                       @RequestParam(defaultValue = "500") int size) {
         return adpAIGatewayService.fetchGateways(param, page, size);
+    }
+
+    @Operation(summary = "获取Apsara Gateway列表")
+    @PostMapping("/apsara")
+    public PageResult<GatewayResult> fetchApsaraGateways(@RequestBody @Valid QueryApsaraGatewayParam param,
+                                                         @RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "500") int size) {
+        return apsaraGatewayService.fetchGateways(param, page, size);
     }
 
     @Operation(summary = "获取导入的Gateway列表")

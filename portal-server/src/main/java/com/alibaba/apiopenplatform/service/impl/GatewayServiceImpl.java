@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @SuppressWarnings("unchecked")
 @Slf4j
-public class GatewayServiceImpl implements GatewayService, ApplicationContextAware, AdpAIGatewayService {
+public class GatewayServiceImpl implements GatewayService, ApplicationContextAware, AdpAIGatewayService, com.alibaba.apiopenplatform.service.ApsaraGatewayService {
 
     private final GatewayRepository gatewayRepository;
     private final ProductRefRepository productRefRepository;
@@ -87,6 +87,10 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
     }
 
     @Override
+    public PageResult<GatewayResult> fetchGateways(QueryApsaraGatewayParam param, int page, int size) {
+        return gatewayOperators.get(GatewayType.APSARA_GATEWAY).fetchGateways(param, page, size);
+    }
+
     public void importGateway(ImportGatewayParam param) {
         gatewayRepository.findByGatewayId(param.getGatewayId())
                 .ifPresent(gateway -> {
@@ -237,6 +241,8 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
             refConfig = productRef.getHigressRefConfig();
         } else if (gateway.getGatewayType().isAdpAIGateway()) {
             refConfig = productRef.getAdpAIGatewayRefConfig();
+        } else if (gateway.getGatewayType().isApsaraGateway()) {
+            refConfig = productRef.getApsaraGatewayRefConfig();
         } else {
             refConfig = productRef.getApigRefConfig();
         }
@@ -259,6 +265,7 @@ public class GatewayServiceImpl implements GatewayService, ApplicationContextAwa
                 .apigConfig(gateway.getApigConfig())
                 .higressConfig(gateway.getHigressConfig())
                 .adpAIGatewayConfig(gateway.getAdpAIGatewayConfig())
+                .apsaraGatewayConfig(gateway.getApsaraGatewayConfig())
                 .gateway(gateway)  // 添加Gateway实体引用
                 .build();
     }

@@ -126,11 +126,14 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
         // mcpServer config
         MCPConfigResult.MCPServerConfig c = new MCPConfigResult.MCPServerConfig();
         c.setPath("/mcp-servers/" + higressMCPConfig.getName());
-        c.setDomains(higressMCPConfig.getDomains().stream().map(domain -> MCPConfigResult.Domain.builder()
-                        .domain(domain)
-                        // 默认HTTP
-                        .protocol("http")
-                        .build())
+        c.setDomains(higressMCPConfig.getDomains().stream().map(domain -> {
+                    HigressDomainConfig domainConfig = fetchDomain(gateway, domain);
+                    String protocol = (domainConfig == null || "off".equalsIgnoreCase(domainConfig.getEnableHttps())) ? "http" : "https";
+                    return DomainResult.builder()
+                            .domain(domain)
+                            .protocol(protocol)
+                            .build();
+                })
                 .collect(Collectors.toList()));
         m.setMcpServerConfig(c);
 
@@ -144,6 +147,17 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
         m.setMeta(meta);
 
         return JSONUtil.toJsonStr(m);
+    }
+
+    private HigressDomainConfig fetchDomain(Gateway gateway, String domain) {
+        HigressClient client = getClient(gateway);
+        HigressResponse<HigressDomainConfig> response = client.execute("/v1/domains/" + domain,
+                HttpMethod.GET,
+                null,
+                null,
+                new ParameterizedTypeReference<HigressResponse<HigressDomainConfig>>() {
+                });
+        return response.getData();
     }
 
     @Override
@@ -312,6 +326,12 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
     @Data
     public static class HigressResponse<T> {
         private T data;
+    }
+
+    @Data
+    public static class HigressDomainConfig {
+        private String name;
+        private String enableHttps;
     }
 
     public HigressAuthConsumerConfig buildAuthHigressConsumer(String gatewayName, String consumerId) {

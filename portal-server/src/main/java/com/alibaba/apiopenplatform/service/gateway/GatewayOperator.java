@@ -31,6 +31,7 @@ import com.alibaba.apiopenplatform.entity.*;
 import com.alibaba.apiopenplatform.service.gateway.client.APIGClient;
 import com.alibaba.apiopenplatform.service.gateway.client.GatewayClient;
 import com.alibaba.apiopenplatform.service.gateway.client.HigressClient;
+import com.alibaba.apiopenplatform.service.gateway.client.ApsaraStackGatewayClient;
 import com.alibaba.apiopenplatform.support.consumer.ConsumerAuthConfig;
 import com.alibaba.apiopenplatform.support.enums.GatewayType;
 import com.alibaba.apiopenplatform.support.gateway.GatewayConfig;
@@ -122,6 +123,9 @@ public abstract class GatewayOperator<T> {
             case APIG_API:
             case APIG_AI:
                 return new APIGClient(gateway.getApigConfig());
+            case APSARA_GATEWAY:
+                return new ApsaraStackGatewayClient(
+                        gateway.getApsaraGatewayConfig());
             case HIGRESS:
                 return new HigressClient(gateway.getHigressConfig());
             default:

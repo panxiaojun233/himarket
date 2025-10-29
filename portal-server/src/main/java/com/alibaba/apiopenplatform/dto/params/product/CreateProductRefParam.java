@@ -41,8 +41,9 @@ public class CreateProductRefParam implements InputConverter<ProductRef> {
 
     private APIGRefConfig apigRefConfig;
 
-    // 新增：ADP AI 网关引用配置（与 APIGRefConfig 结构一致）
     private APIGRefConfig adpAIGatewayRefConfig;
+
+    private APIGRefConfig apsaraGatewayRefConfig;
 
     private HigressRefConfig higressRefConfig;
 
