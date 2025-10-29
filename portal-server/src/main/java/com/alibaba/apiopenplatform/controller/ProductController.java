@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @Tag(name = "API产品管理", description = "提供API产品的创建、更新、删除、查询、订阅等管理功能")
 @RestController

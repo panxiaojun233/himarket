@@ -47,8 +47,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 
-import javax.persistence.criteria.*;
-import javax.transaction.Transactional;
+import jakarta.persistence.criteria.*;
+import jakarta.transaction.Transactional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

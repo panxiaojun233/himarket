@@ -22,7 +22,7 @@ package com.alibaba.apiopenplatform.entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * Nacos实例实体

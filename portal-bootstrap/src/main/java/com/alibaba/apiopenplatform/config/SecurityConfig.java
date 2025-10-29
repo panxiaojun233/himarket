@@ -88,22 +88,21 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())
-                .csrf().disable()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .and()
-                .authorizeRequests()
-                // OPTIONS请求放行
-                .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // 认证相关接口放行
-                .antMatchers(AUTH_WHITELIST).permitAll()
-                // Swagger相关接口放行
-                .antMatchers(SWAGGER_WHITELIST).permitAll()
-                // 系统路径放行
-                .antMatchers(SYSTEM_WHITELIST).permitAll()
-                .anyRequest().authenticated()
-                .and()
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        // OPTIONS请求放行
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // 认证相关接口放行
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        // Swagger相关接口放行
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                        // 系统路径放行
+                        .requestMatchers(SYSTEM_WHITELIST).permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authenticationProvider(developerAuthenticationProvider);
         return http.build();

@@ -2,7 +2,7 @@ package com.alibaba.apiopenplatform.converter;
 
 import com.alibaba.apiopenplatform.support.product.ProductIcon;
 
-import javax.persistence.Converter;
+import jakarta.persistence.Converter;
 
 /**
  * @author zh

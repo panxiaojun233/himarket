@@ -1,4 +1,4 @@
-FROM docker.m.daocloud.io/openjdk:8-jdk-slim
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 

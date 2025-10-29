@@ -26,7 +26,7 @@ import com.alibaba.apiopenplatform.support.enums.ProductType;
 import com.alibaba.apiopenplatform.support.product.ProductIcon;
 import lombok.Data;
 
-import javax.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.AssertTrue;
 
 @Data
 public class UpdateProductParam implements InputConverter<Product> {
