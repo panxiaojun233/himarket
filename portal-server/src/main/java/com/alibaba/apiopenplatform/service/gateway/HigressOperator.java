@@ -19,6 +19,7 @@
 
 package com.alibaba.apiopenplatform.service.gateway;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapBuilder;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.apiopenplatform.dto.result.agent.AgentAPIResult;
@@ -127,15 +128,28 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
         // mcpServer config
         MCPConfigResult.MCPServerConfig c = new MCPConfigResult.MCPServerConfig();
         c.setPath("/mcp-servers/" + higressMCPConfig.getName());
-        c.setDomains(higressMCPConfig.getDomains().stream().map(domain -> {
-                    HigressDomainConfig domainConfig = fetchDomain(gateway, domain);
-                    String protocol = (domainConfig == null || "off".equalsIgnoreCase(domainConfig.getEnableHttps())) ? "http" : "https";
-                    return DomainResult.builder()
-                            .domain(domain)
-                            .protocol(protocol)
-                            .build();
-                })
-                .collect(Collectors.toList()));
+        List<String> domains = higressMCPConfig.getDomains();
+        if (CollUtil.isEmpty(domains)) {
+            c.setDomains(Collections.singletonList(
+                    DomainResult.builder()
+                            .domain("<higress-gateway-ip>")
+                            .protocol("http")
+                            .build()
+            ));
+        } else {
+            c.setDomains(domains.stream()
+                    .map(domain -> {
+                        HigressDomainConfig domainConfig = fetchDomain(gateway, domain);
+                        String protocol = (domainConfig == null || "off".equalsIgnoreCase(domainConfig.getEnableHttps()))
+                                ? "http" : "https";
+                        return DomainResult.builder()
+                                .domain(domain)
+                                .protocol(protocol)
+                                .build();
+                    })
+                    .collect(Collectors.toList()));
+        }
+
         m.setMcpServerConfig(c);
 
         // tools

@@ -196,19 +196,17 @@ function ModelDetail() {
       return null;
     }
 
-    // 找到chat/completions路由
-    const chatCompletionsRoute = modelConfig.modelAPIConfig.routes.find(route => 
-      route.match?.path?.value === '/v1/chat/completions'
-    );
+    // 直接使用第一个路由
+    const firstRoute = modelConfig.modelAPIConfig.routes[0];
 
-    if (!chatCompletionsRoute) {
+    if (!firstRoute?.match?.path?.value) {
       return null;
     }
 
     // 使用选择的域名
     const selectedDomain = allUniqueDomains[selectedModelDomainIndex] || allUniqueDomains[0];
     const baseUrl = `${selectedDomain.protocol.toLowerCase()}://${selectedDomain.domain}`;
-    const fullUrl = `${baseUrl}${chatCompletionsRoute.match.path.value}`;
+    const fullUrl = `${baseUrl}${firstRoute.match.path.value}`;
 
     return `curl --location '${fullUrl}' \\
   --header 'Content-Type: application/json' \\
