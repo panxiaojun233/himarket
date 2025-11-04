@@ -66,6 +66,7 @@ export interface ApiProductAgentConfig {
 
 export interface ApiProductModelConfig {
   modelAPIConfig: {
+    modelCategory?: string;
     aiProtocols: string[];
     routes: Array<{
       domains: Array<{
@@ -73,6 +74,7 @@ export interface ApiProductModelConfig {
         protocol: string;
       }>;
       description: string;
+      builtin?: boolean;
       match: {
         methods: string[] | null;
         path: {

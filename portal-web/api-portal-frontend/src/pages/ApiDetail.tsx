@@ -29,7 +29,7 @@ interface UpdatedProduct extends Omit<Product, 'apiSpec'> {
 
 function ApiDetailPage() {
   const { apiProductId } = useParams();
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [apiData, setApiData] = useState<UpdatedProduct | null>(null);
   const [baseUrl, setBaseUrl] = useState<string>('');
@@ -100,7 +100,7 @@ function ApiDetailPage() {
 
   if (error) {
     return (
-      <Layout loading={loading}>
+      <Layout>
         <Alert message={error} type="error" showIcon className="my-8" />
       </Layout>
     );
@@ -108,14 +108,16 @@ function ApiDetailPage() {
 
   if (!apiData) {
     return (
-      <Layout loading={loading}>
-        <Alert message="未找到API信息" type="warning" showIcon className="my-8" />
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div>Loading...</div>
+        </div>
       </Layout>
     );
   }
 
   return (
-    <Layout loading={loading}>
+    <Layout>
       <div className="mb-6">
         <ProductHeader
           name={apiData.name}

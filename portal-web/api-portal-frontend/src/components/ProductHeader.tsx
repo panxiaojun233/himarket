@@ -47,7 +47,13 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
   updatedAt,
   productType,
 }) => {
-  const { id, mcpName } = useParams();
+  const { 
+    apiProductId, 
+    mcpProductId, 
+    agentProductId, 
+    modelProductId 
+  } = useParams();
+  
   const [isManageModalVisible, setIsManageModalVisible] = useState(false);
   const [isApplyingSubscription, setIsApplyingSubscription] = useState(false);
   const [selectedConsumerId, setSelectedConsumerId] = useState<string>('');
@@ -89,8 +95,8 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
   // 判断是否应该显示申请订阅按钮
   const shouldShowSubscribeButton = productType === 'AGENT_API' || productType === 'MODEL_API' || (!mcpConfig || mcpConfig.meta.source !== 'NACOS');
 
-  // 获取产品ID
-  const productId = id || mcpName || '';
+  // 获取产品ID - 根据产品类型获取正确的参数
+  const productId = apiProductId || mcpProductId || agentProductId || modelProductId || '';
 
   // 查询订阅状态
   const fetchSubscriptionStatus = async () => {

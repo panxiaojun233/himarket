@@ -21,6 +21,7 @@ public class ModelConfigResult {
         /**
          * for AI gateway
          */
+        private String modelCategory;
         private List<String> aiProtocols;
         private List<HttpRouteResult> routes;
         private List<ServiceResult> services;

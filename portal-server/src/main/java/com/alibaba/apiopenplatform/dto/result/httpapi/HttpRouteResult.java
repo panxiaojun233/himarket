@@ -1,5 +1,6 @@
 package com.alibaba.apiopenplatform.dto.result.httpapi;
 
+import cn.hutool.core.util.BooleanUtil;
 import com.alibaba.apiopenplatform.dto.converter.OutputConverter;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class HttpRouteResult implements OutputConverter<HttpRouteResult, HttpRou
     private String description;
     private RouteMatchResult match;
     private BackendResult backend;
+    private Boolean builtin;
 
     public HttpRouteResult convertFrom(HttpRoute route, List<DomainResult> domains) {
         // path
@@ -66,6 +68,7 @@ public class HttpRouteResult implements OutputConverter<HttpRouteResult, HttpRou
         setMatch(routeMatchResult);
         setBackend(backendResult);
         setDescription(route.getDescription());
+        setBuiltin(BooleanUtil.toBooleanObject(route.getBuiltin()));
 
         return this;
     }

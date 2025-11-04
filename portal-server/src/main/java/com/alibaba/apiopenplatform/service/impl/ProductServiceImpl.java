@@ -246,6 +246,7 @@ public class ProductServiceImpl implements ProductService {
         clearProductCategoryRelations(productId);
 
         productRepository.delete(product);
+        productRefRepository.deleteByProductId(productId);
 
         // 异步清理Product资源
         eventPublisher.publishEvent(new ProductDeletingEvent(productId));

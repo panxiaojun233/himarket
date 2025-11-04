@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { Card, Tag, Typography, Input, Avatar, Skeleton } from "antd";
+const { Title, Paragraph } = Typography;
+import { FolderFilled, FolderOpenFilled } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import api from "../lib/api";
+import api, { categoryApi } from "../lib/api";
 import { ProductStatus } from "../types";
-import type { Product, ModelApiProduct, ApiResponse, PaginatedResponse, ProductIcon } from "../types";
-
-const { Title, Paragraph } = Typography;
-const { Search } = Input;
+import type { Product, ModelApiProduct, ApiResponse, PaginatedResponse, ProductIcon, ProductCategoryData } from "../types";
 
 interface ModelAPI {
   key: string;
@@ -20,17 +19,34 @@ interface ModelAPI {
   creator: string;
   icon?: ProductIcon | null;
   modelConfig?: any;
+  categories: ProductCategoryData[];
   updatedAt: string;
 }
 
 function ModelPage() {
   const [loading, setLoading] = useState(false);
   const [modelAPIs, setModelAPIs] = useState<ModelAPI[]>([]);
+  const [allModels, setAllModels] = useState<ModelAPI[]>([]);
   const [searchText, setSearchText] = useState('');
+  const [categories, setCategories] = useState<ProductCategoryData[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
     fetchModelAPIs();
+    fetchCategories();
   }, []);
+
+  // 获取类别列表
+  const fetchCategories = async () => {
+    try {
+      const response: any = await categoryApi.getCategoriesByProductType('MODEL_API');
+      if (response.code === "SUCCESS" && response.data) {
+        setCategories(response.data.content || []);
+      }
+    } catch (error) {
+      console.error('获取类别列表失败:', error);
+    }
+  };
 
   // 处理产品图标的函数
   const getIconUrl = (icon?: ProductIcon | null): string => {
@@ -66,6 +82,32 @@ function ModelPage() {
     return colors[index];
   };
 
+  // 获取适用场景英文标识
+  const getModelCategoryLabel = (modelConfig?: any): string => {
+    const category = modelConfig?.modelAPIConfig?.modelCategory;
+    if (!category) return 'Model';
+    
+    // 直接返回英文标识，首字母大写
+    switch (category) {
+      case 'Text':
+        return 'Text';
+      case 'Image':
+        return 'Image';
+      case 'Video':
+        return 'Video';
+      case 'Audio':
+        return 'Audio';
+      case 'Embedding':
+        return 'Embedding';
+      case 'Rerank':
+        return 'Rerank';
+      case 'Others':
+        return 'Others';
+      default:
+        return category || 'Model';
+    }
+  };
+
   const fetchModelAPIs = async () => {
     setLoading(true);
     try {
@@ -83,13 +125,15 @@ function ModelPage() {
             status: modelProduct.status === ProductStatus.ENABLE ? 'active' : 'inactive',
             version: 'v1.0.0',
             protocols: 0,
-            category: modelProduct.category,
+            category: 'Unknown',
             creator: 'Unknown',
             icon: modelProduct.icon || undefined,
             modelConfig: modelProduct.modelConfig,
+            categories: modelProduct.categories || [],
             updatedAt: modelProduct.updatedAt?.slice(0, 10) || ''
           };
         });
+        setAllModels(mapped);
         setModelAPIs(mapped);
       }
     } catch (error) {
@@ -97,6 +141,47 @@ function ModelPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 处理类别筛选
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    if (categoryId === 'all') {
+      setModelAPIs(allModels);
+    } else {
+      const filtered = allModels.filter(model => 
+        model.categories.some(cat => cat.categoryId === categoryId)
+      );
+      setModelAPIs(filtered);
+    }
+  };
+
+  // 获取类别图标
+  const getCategoryIcon = (icon?: ProductIcon, _isSelected?: boolean, isAll?: boolean) => {
+    if (!icon || !icon.value) {
+      // "全部"使用打开的文件夹图标，其他使用普通文件夹图标
+      const IconComponent = isAll ? FolderOpenFilled : FolderFilled;
+      return <IconComponent style={{ fontSize: '18px', color: '#D1D5DB' }} />;
+    }
+    
+    let iconUrl = '';
+    if (icon.type === 'URL') {
+      iconUrl = icon.value;
+    } else if (icon.type === 'BASE64') {
+      // 处理BASE64数据，确保有正确的前缀
+      iconUrl = icon.value.startsWith('data:') ? icon.value : `data:image/png;base64,${icon.value}`;
+    }
+    
+    return (
+      <img 
+        src={iconUrl} 
+        alt="" 
+        style={{ width: '18px', height: '18px' }}
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
+        }}
+      />
+    );
   };
 
   const filteredModelAPIs = modelAPIs.filter(model =>
@@ -118,23 +203,70 @@ function ModelPage() {
 
         {/* Search Section */}
         <div className="flex justify-center mb-8">
-          <div className="relative w-full max-w-2xl">
-            <Search
-              placeholder="请输入内容"
-              size="large"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="rounded-lg shadow-lg"
-            />
+          <div className="relative w-full max-w-lg">
+            <div className="border border-gray-300 rounded-md overflow-hidden hover:border-blue-500 focus-within:border-blue-500 focus-within:shadow-sm" style={{ width: '100%', maxWidth: '500px' }}>
+              <Input.Search
+                placeholder="请输入内容"
+                size="large"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="border-0 rounded-none"
+                variant="borderless"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Models Section */}
-        <div className="mb-6">
-          <Title level={3} className="mb-4">
-            热门/推荐 Model APIs: {filteredModelAPIs.length}
-          </Title>
+      {/* Category Tags Section */}
+      <div className="mb-2">
+        <div className="py-3 px-4 border border-gray-200 rounded-lg bg-[#f4f4f6]">
+          <div className="flex flex-wrap items-center gap-4">
+            <div
+              className={`cursor-pointer transition-all duration-200 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm border ${
+                selectedCategory === 'all' 
+                  ? 'bg-white shadow-sm text-blue-600 border-blue-200' 
+                  : 'text-gray-600 border-transparent hover:bg-white hover:shadow-sm hover:border-gray-200'
+              }`}
+              onClick={() => handleCategoryChange('all')}
+            >
+              <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                selectedCategory === 'all' ? 'border-blue-500 bg-blue-500' : 'border-gray-300 bg-white'
+              }`}>
+                {selectedCategory === 'all' && (
+                  <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              {getCategoryIcon(undefined, selectedCategory === 'all', true)}
+              <span>全部</span>
+            </div>
+            {categories.map(category => (
+              <div
+                key={category.categoryId}
+                className={`cursor-pointer transition-all duration-200 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm border ${
+                  selectedCategory === category.categoryId
+                    ? 'bg-white shadow-sm text-blue-600 border-blue-200'
+                    : 'text-gray-600 border-transparent hover:bg-white hover:shadow-sm hover:border-gray-200'
+                }`}
+                onClick={() => handleCategoryChange(category.categoryId)}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                  selectedCategory === category.categoryId ? 'border-blue-500 bg-blue-500' : 'border-gray-300 bg-white'
+                }`}>
+                  {selectedCategory === category.categoryId && (
+                    <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                {getCategoryIcon(category.icon, selectedCategory === category.categoryId)}
+                <span>{category.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
 
       {/* Models Grid */}
       {loading ? (
@@ -189,18 +321,19 @@ function ModelPage() {
                         {model.name}
                       </Title>
                       <Tag className="text-xs text-gray-500 border-0 bg-transparent px-0">
-                        DashScope
+                        {getModelCategoryLabel(model.modelConfig)}
                       </Tag>
                     </div>
-                  </div>
-                </div>
-                <Paragraph className="text-sm text-gray-600 mb-3 line-clamp-2">
-                  {model.description}
-                </Paragraph>
 
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-gray-400">
-                    更新 {model.updatedAt}
+                    <Paragraph className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {model.description}
+                    </Paragraph>
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-400">
+                        更新 {model.updatedAt}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>

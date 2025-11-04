@@ -48,6 +48,8 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
   const [sseJson, setSseJson] = useState('')
   const [localJson, setLocalJson] = useState('')
   const [selectedDomainIndex, setSelectedDomainIndex] = useState<number>(0)
+  const [selectedAgentDomainIndex, setSelectedAgentDomainIndex] = useState<number>(0)
+  const [selectedModelDomainIndex, setSelectedModelDomainIndex] = useState<number>(0)
 
   useEffect(() => {    
     fetchGateways()
@@ -73,6 +75,8 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
   // 当产品切换时重置域名选择索引
   useEffect(() => {
     setSelectedDomainIndex(0);
+    setSelectedAgentDomainIndex(0);
+    setSelectedModelDomainIndex(0);
   }, [apiProduct.productId]);
 
   useEffect(() => {
@@ -794,27 +798,35 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                   <h3 className="text-sm font-semibold mb-3">连接点配置</h3>
 
                   {/* 域名选择器 */}
-                  {apiProduct.mcpConfig?.mcpServerConfig?.domains && apiProduct.mcpConfig.mcpServerConfig.domains.length > 1 && (
+                  {apiProduct.mcpConfig?.mcpServerConfig?.domains && apiProduct.mcpConfig.mcpServerConfig.domains.length > 0 && (
                     <div className="mb-2">
-                      <Select
-                        value={selectedDomainIndex}
-                        onChange={setSelectedDomainIndex}
-                        className="w-full"
-                        placeholder="选择域名"
-                        size="middle"
-                        style={{
-                          borderRadius: '6px',
-                          fontSize: '12px'
-                        }}
-                      >
-                        {getDomainOptions(apiProduct.mcpConfig.mcpServerConfig.domains).map((option) => (
-                          <Select.Option key={option.value} value={option.value}>
-                            <span className="text-xs text-gray-900 font-mono">
-                              {option.label}
-                            </span>
-                          </Select.Option>
-                        ))}
-                      </Select>
+                      <div className="flex items-stretch border border-gray-200 rounded-md overflow-hidden">
+                        <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600 border-r border-gray-200 flex items-center whitespace-nowrap">
+                          域名
+                        </div>
+                        <div className="flex-1">
+                          <Select
+                            value={selectedDomainIndex}
+                            onChange={setSelectedDomainIndex}
+                            className="w-full"
+                            placeholder="选择域名"
+                            size="middle"
+                            bordered={false}
+                            style={{
+                              fontSize: '12px',
+                              height: '100%'
+                            }}
+                          >
+                            {getDomainOptions(apiProduct.mcpConfig.mcpServerConfig.domains).map((option) => (
+                              <Select.Option key={option.value} value={option.value}>
+                                <span className="text-xs text-gray-900 font-mono">
+                                  {option.label}
+                                </span>
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -919,16 +931,44 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
         }
       }
 
+      // 获取所有唯一域名的简化版本
+      const getAllUniqueDomains = () => {
+        const domainsMap = new Map<string, { domain: string; protocol: string }>()
+        
+        routes.forEach(route => {
+          if (route.domains && route.domains.length > 0) {
+            route.domains.forEach((domain: any) => {
+              const key = `${domain.protocol}://${domain.domain}`
+              domainsMap.set(key, domain)
+            })
+          }
+        })
+        
+        return Array.from(domainsMap.values())
+      }
+
+      const allUniqueDomains = getAllUniqueDomains()
+
+      // 生成域名选择器选项
+      const agentDomainOptions = allUniqueDomains.map((domain, index) => ({
+        value: index,
+        label: `${domain.protocol.toLowerCase()}://${domain.domain}`
+      }))
+
       // 生成路由显示文本（优化方法显示）
-      const getRouteDisplayText = (route: any) => {
+      const getRouteDisplayText = (route: any, domainIndex: number = 0) => {
         if (!route.match) return 'Unknown Route'
 
         const path = route.match.path?.value || '/'
         const pathType = route.match.path?.type
 
-        // 拼接域名信息
+        // 拼接域名信息 - 使用选择的域名索引
         let domainInfo = ''
-        if (route.domains && route.domains.length > 0) {
+        if (allUniqueDomains.length > 0 && allUniqueDomains.length > domainIndex) {
+          const selectedDomain = allUniqueDomains[domainIndex]
+          domainInfo = `${selectedDomain.protocol.toLowerCase()}://${selectedDomain.domain}`
+        } else if (route.domains && route.domains.length > 0) {
+          // 回退到路由的第一个域名
           const domain = route.domains[0]
           domainInfo = `${domain.protocol.toLowerCase()}://${domain.domain}`
         }
@@ -961,11 +1001,17 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
       }
 
       // 生成完整URL
-      const getFullUrl = (route: any) => {
-        if (!route.domains || route.domains.length === 0) return ''
-        const domain = route.domains[0]
-        const path = route.match?.path?.value || '/'
-        return `${domain.protocol.toLowerCase()}://${domain.domain}${path}`
+      const getFullUrl = (route: any, domainIndex: number = 0) => {
+        if (allUniqueDomains.length > 0 && allUniqueDomains.length > domainIndex) {
+          const selectedDomain = allUniqueDomains[domainIndex]
+          const path = route.match?.path?.value || '/'
+          return `${selectedDomain.protocol.toLowerCase()}://${selectedDomain.domain}${path}`
+        } else if (route.domains && route.domains.length > 0) {
+          const domain = route.domains[0]
+          const path = route.match?.path?.value || '/'
+          return `${domain.protocol.toLowerCase()}://${domain.domain}${path}`
+        }
+        return ''
       }
 
       return (
@@ -981,6 +1027,40 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
             {routes.length > 0 && (
               <div>
                 <div className="text-sm text-gray-600 mb-3">路由配置:</div>
+                
+                {/* 域名选择器 */}
+                {agentDomainOptions.length > 1 && (
+                  <div className="mb-2">
+                    <div className="flex items-stretch border border-gray-200 rounded-md overflow-hidden">
+                      <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600 border-r border-gray-200 flex items-center whitespace-nowrap">
+                        域名
+                      </div>
+                      <div className="flex-1">
+                        <Select
+                          value={selectedAgentDomainIndex}
+                          onChange={setSelectedAgentDomainIndex}
+                          className="w-full"
+                          placeholder="选择域名"
+                          size="middle"
+                          bordered={false}
+                          style={{
+                            fontSize: '12px',
+                            height: '100%'
+                          }}
+                        >
+                          {agentDomainOptions.map((option) => (
+                            <Select.Option key={option.value} value={option.value}>
+                              <span className="text-xs text-gray-900 font-mono">
+                                {option.label}
+                              </span>
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <Collapse ghost expandIconPosition="end">
                     {routes.map((route, index) => (
@@ -990,7 +1070,7 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                           <div className="flex items-center justify-between py-3 px-4 hover:bg-gray-50">
                             <div className="flex-1">
                               <div className="font-mono text-sm font-medium text-blue-600 mb-1">
-                                {getRouteDisplayText(route)}
+                                {getRouteDisplayText(route, selectedAgentDomainIndex)}
                               </div>
                               <div className="text-xs text-gray-500">
                                 方法: <span className="font-medium text-gray-700">{getMethodsText(route)}</span>
@@ -1001,7 +1081,7 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                               type="text"
                               onClick={async (e) => {
                                 e.stopPropagation()
-                                const fullUrl = getFullUrl(route)
+                                const fullUrl = getFullUrl(route, selectedAgentDomainIndex)
                                 if (fullUrl) {
                                   try {
                                     await copyToClipboard(fullUrl)
@@ -1098,6 +1178,30 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
       const routes = modelAPIConfig.routes || []
       const protocols = modelAPIConfig.aiProtocols || []
 
+      // 获取所有唯一域名的简化版本
+      const getAllModelUniqueDomains = () => {
+        const domainsMap = new Map<string, { domain: string; protocol: string }>()
+        
+        routes.forEach(route => {
+          if (route.domains && route.domains.length > 0) {
+            route.domains.forEach((domain: any) => {
+              const key = `${domain.protocol}://${domain.domain}`
+              domainsMap.set(key, domain)
+            })
+          }
+        })
+        
+        return Array.from(domainsMap.values())
+      }
+
+      const allModelUniqueDomains = getAllModelUniqueDomains()
+
+      // 生成域名选择器选项
+      const modelDomainOptions = allModelUniqueDomains.map((domain, index) => ({
+        value: index,
+        label: `${domain.protocol.toLowerCase()}://${domain.domain}`
+      }))
+
       // 生成匹配类型前缀文字
       const getMatchTypePrefix = (matchType: string) => {
         switch (matchType) {
@@ -1113,15 +1217,19 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
       }
 
       // 生成路由显示文本
-      const getRouteDisplayText = (route: any) => {
+      const getRouteDisplayText = (route: any, domainIndex: number = 0) => {
         if (!route.match) return 'Unknown Route'
 
         const path = route.match.path?.value || '/'
         const pathType = route.match.path?.type
 
-        // 拼接域名信息
+        // 拼接域名信息 - 使用选择的域名索引
         let domainInfo = ''
-        if (route.domains && route.domains.length > 0) {
+        if (allModelUniqueDomains.length > 0 && allModelUniqueDomains.length > domainIndex) {
+          const selectedDomain = allModelUniqueDomains[domainIndex]
+          domainInfo = `${selectedDomain.protocol.toLowerCase()}://${selectedDomain.domain}`
+        } else if (route.domains && route.domains.length > 0) {
+          // 回退到路由的第一个域名
           const domain = route.domains[0]
           domainInfo = `${domain.protocol.toLowerCase()}://${domain.domain}`
         }
@@ -1154,16 +1262,52 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
       }
 
       // 获取完整URL用于复制
-      const getFullUrl = (route: any) => {
-        if (!route.domains || route.domains.length === 0) return null
-        const domain = route.domains[0]
-        const path = route.match?.path?.value || '/'
-        return `${domain.protocol.toLowerCase()}://${domain.domain}${path}`
+      const getFullUrl = (route: any, domainIndex: number = 0) => {
+        if (allModelUniqueDomains.length > 0 && allModelUniqueDomains.length > domainIndex) {
+          const selectedDomain = allModelUniqueDomains[domainIndex]
+          const path = route.match?.path?.value || '/'
+          return `${selectedDomain.protocol.toLowerCase()}://${selectedDomain.domain}${path}`
+        } else if (route.domains && route.domains.length > 0) {
+          const domain = route.domains[0]
+          const path = route.match?.path?.value || '/'
+          return `${domain.protocol.toLowerCase()}://${domain.domain}${path}`
+        }
+        return null
+      }
+
+      // 获取适用场景中文翻译
+      const getModelCategoryText = (category: string) => {
+        switch (category) {
+          case 'Text':
+            return '文本生成'
+          case 'Image':
+            return '图片生成'
+          case 'Video':
+            return '视频生成'
+          case 'Audio':
+            return '语音合成'
+          case 'Embedding':
+            return '向量化（Embedding）'
+          case 'Rerank':
+            return '文本排序（Rerank）'
+          case 'Others':
+            return '其他'
+          default:
+            return category || '未知'
+        }
       }
 
       return (
         <Card title="配置详情">
           <div className="space-y-4">
+          {/* 适用场景信息 */}
+          {modelAPIConfig.modelCategory && (
+            <div className="text-sm">
+              <span className="text-gray-700">适用场景: </span>
+              <span className="font-medium">{getModelCategoryText(modelAPIConfig.modelCategory)}</span>
+            </div>
+          )}
+
           {/* 协议信息 */}
           <div className="text-sm">
             <span className="text-gray-700">协议: </span>
@@ -1174,6 +1318,40 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
             {routes.length > 0 && (
               <div>
                 <div className="text-sm text-gray-600 mb-3">路由配置:</div>
+                
+                {/* 域名选择器 */}
+                {modelDomainOptions.length > 0 && (
+                  <div className="mb-2">
+                    <div className="flex items-stretch border border-gray-200 rounded-md overflow-hidden">
+                      <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600 border-r border-gray-200 flex items-center whitespace-nowrap">
+                        域名
+                      </div>
+                      <div className="flex-1">
+                        <Select
+                          value={selectedModelDomainIndex}
+                          onChange={setSelectedModelDomainIndex}
+                          className="w-full"
+                          placeholder="选择域名"
+                          size="middle"
+                          bordered={false}
+                          style={{
+                            fontSize: '12px',
+                            height: '100%'
+                          }}
+                        >
+                          {modelDomainOptions.map((option) => (
+                            <Select.Option key={option.value} value={option.value}>
+                              <span className="text-xs text-gray-900 font-mono">
+                                {option.label}
+                              </span>
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <Collapse ghost expandIconPosition="end">
                     {routes.map((route, index) => (
@@ -1183,7 +1361,10 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                           <div className="flex items-center justify-between py-3 px-4 hover:bg-gray-50">
                             <div className="flex-1">
                               <div className="font-mono text-sm font-medium text-blue-600 mb-1">
-                                {getRouteDisplayText(route)}
+                                {getRouteDisplayText(route, selectedModelDomainIndex)}
+                                {route.builtin && (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">默认</span>
+                                )}
                               </div>
                               <div className="text-xs text-gray-500">
                                 方法: <span className="font-medium text-gray-700">{getMethodsText(route)}</span>
@@ -1194,7 +1375,7 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                               type="text"
                               onClick={async (e) => {
                                 e.stopPropagation()
-                                const fullUrl = getFullUrl(route)
+                                const fullUrl = getFullUrl(route, selectedModelDomainIndex)
                                 if (fullUrl) {
                                   try {
                                     await copyToClipboard(fullUrl)
@@ -1219,18 +1400,22 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                           <div className="text-xs text-gray-500 mb-1">域名:</div>
                           {route.domains?.map((domain: any, domainIndex: number) => (
                             <div key={domainIndex} className="text-sm">
-                              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                                {domain.protocol.toLowerCase()}://{domain.domain}
-                              </code>
+                              <span className="font-mono">{domain.protocol.toLowerCase()}://{domain.domain}</span>
                             </div>
                           ))}
                         </div>
 
-                        {/* 路径匹配 */}
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">路径:</div>
-                          <div className="text-sm">
-                            {getMatchTypePrefix(route.match?.path?.type || 'Exact')} <code className="bg-gray-100 px-2 py-1 rounded text-xs">{route.match?.path?.value}</code>
+                        {/* 匹配规则 */}
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-xs text-gray-500">路径:</div>
+                            <div className="font-mono">
+                              {getMatchTypePrefix(route.match?.path?.type)} {route.match?.path?.value}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-500">方法:</div>
+                            <div>{route.match?.methods ? route.match.methods.join(', ') : 'ANY'}</div>
                           </div>
                         </div>
 
@@ -1240,10 +1425,8 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                             <div className="text-xs text-gray-500 mb-1">请求头匹配:</div>
                             <div className="space-y-1">
                               {route.match.headers.map((header: any, headerIndex: number) => (
-                                <div key={headerIndex} className="text-sm">
-                                  <code className="bg-gray-100 px-2 py-1 rounded text-xs mr-2">{header.name}</code>
-                                  <span className="text-gray-600">{getMatchTypePrefix(header.type)}</span>
-                                  <code className="bg-gray-100 px-2 py-1 rounded text-xs ml-2">{header.value}</code>
+                                <div key={headerIndex} className="text-sm font-mono">
+                                  {header.name} {getMatchTypePrefix(header.type)} {header.value}
                                 </div>
                               ))}
                             </div>
@@ -1256,10 +1439,8 @@ export function ApiProductLinkApi({ apiProduct, linkedService, onLinkedServiceUp
                             <div className="text-xs text-gray-500 mb-1">查询参数匹配:</div>
                             <div className="space-y-1">
                               {route.match.queryParams.map((param: any, paramIndex: number) => (
-                                <div key={paramIndex} className="text-sm">
-                                  <code className="bg-gray-100 px-2 py-1 rounded text-xs mr-2">{param.name}</code>
-                                  <span className="text-gray-600">{getMatchTypePrefix(param.type)}</span>
-                                  <code className="bg-gray-100 px-2 py-1 rounded text-xs ml-2">{param.value}</code>
+                                <div key={paramIndex} className="text-sm font-mono">
+                                  {param.name} {getMatchTypePrefix(param.type)} {param.value}
                                 </div>
                               ))}
                             </div>
