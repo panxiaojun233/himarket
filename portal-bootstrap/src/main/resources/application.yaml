@@ -6,24 +6,18 @@ spring:
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
-#db:
-#   host: YourDBHost
-#   port: 3306
-#   name: YourDBName
-#   username: YourDBUser
-#   password: YourDBPassword
 db:
    host: ${DB_HOST:localhost}
    port: ${DB_PORT:3306}
    name: ${DB_NAME:portal_db}
    username: ${DB_USERNAME:root}
-   password: ${DB_PASSWORD:}
+   password: ${DB_PASSWORD:12345678}
 
 # Encryptor
 encryption:
