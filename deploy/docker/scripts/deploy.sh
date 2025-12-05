@@ -10,6 +10,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOCKER_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"  # docker-compose.yml 所在目录
 DATA_DIR="${SCRIPT_DIR}/data"
 HOOKS_DIR="${SCRIPT_DIR}/hooks"
 
@@ -45,13 +46,13 @@ check_dependencies() {
   require_cmd docker-compose
   require_cmd curl
   require_cmd jq
-  
+
   # 检查 Docker 是否正在运行
   if ! docker info >/dev/null 2>&1; then
     err "Docker 未运行，请先启动 Docker"
     exit 1
   fi
-  
+
   log "依赖检查完成"
 }
 
@@ -63,9 +64,9 @@ wait_service() {
   local max_wait="${2:-300}"  # 默认最多等待 5 分钟
   local interval=5
   local elapsed=0
-  
+
   log "等待服务就绪: ${service_name}..."
-  
+
   while (( elapsed < max_wait )); do
     # 获取容器ID
     local cid
@@ -86,17 +87,17 @@ wait_service() {
         return 0
       fi
     fi
-    
+
     sleep "$interval"
     elapsed=$((elapsed + interval))
-    
+
     if (( elapsed % 30 == 0 )); then
       local psline
       psline=$(docker-compose ps "${service_name}" 2>/dev/null | sed -n '2p' || true)
       log "等待 ${service_name} 就绪... (${elapsed}s/${max_wait}s) 状态: ${psline}"
     fi
   done
-  
+
   err "${service_name} 启动超时"
   docker-compose logs "${service_name}" | tail -50
   return 1
@@ -123,7 +124,7 @@ run_hooks() {
             # 根据商业化 Nacos 开关跳过特定脚本
       if [[ "${USE_COMMERCIAL_NACOS}" == "true" ]]; then
         # 使用商业化 Nacos 时，跳过开源 Nacos 相关脚本
-        if [[ "$hook_name" == "10-init-nacos-admin.sh" || "$hook_name" == "35-import-nacos-mcp.sh" ]]; then
+        if [[ "$hook_name" == "10-init-nacos-admin.sh" ]]; then
           log "跳过钩子: ${hook_name} (已启用商业化 Nacos)"
           continue
         fi
@@ -160,19 +161,19 @@ deploy_himarket_only() {
   log "========================================"
   log "开始部署 Himarket Only..."
   log "========================================"
-  
+
   # 检查依赖
   check_dependencies
-  
+
   # 启动 Himarket 服务
   log "启动 Himarket 服务..."
-  cd "${SCRIPT_DIR}"
-  
+  cd "${DOCKER_DIR}"  # 切换到 docker-compose.yml 所在目录
+
   # 根据 USE_BUILTIN_MYSQL 开关决定是否启用内置 MySQL
   if [[ "${USE_BUILTIN_MYSQL}" == "true" ]]; then
     log "使用内置 MySQL"
     export COMPOSE_PROFILES=builtin-mysql
-    docker-compose up -d mysql himarket-server himarket-admin himarket-frontend
+    docker-compose --env-file "${DATA_DIR}/.env" up -d mysql himarket-server himarket-admin himarket-frontend
   else
     log "使用外置 MySQL (DB_HOST=${DB_HOST})"
     # 验证外置 MySQL 配置
@@ -180,23 +181,23 @@ deploy_himarket_only() {
       err "使用外置 MySQL 时，必须配置 DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD"
       exit 1
     fi
-    docker-compose up -d himarket-server himarket-admin himarket-frontend
+    docker-compose --env-file "${DATA_DIR}/.env" up -d himarket-server himarket-admin himarket-frontend
   fi
-  
+
   # 等待服务就绪
   log "等待 Himarket 服务启动..."
-  
+
   # 只有使用内置 MySQL 时才等待 MySQL 服务
   if [[ "${USE_BUILTIN_MYSQL}" == "true" ]]; then
     wait_service "mysql" 120
   else
     log "跳过内置 MySQL 等待（使用外置 MySQL）"
   fi
-  
+
   wait_service "himarket-server" 180
   wait_service "himarket-admin" 120
   wait_service "himarket-frontend" 120
-  
+
   log "========================================"
   log "✓ Himarket Only 部署完成！"
   log "========================================"
@@ -222,21 +223,21 @@ deploy_all() {
   log "========================================"
   log "开始部署 Himarket All-in-One（全栈模式）..."
   log "========================================"
-  
+
   # 检查依赖
   check_dependencies
-  
+
   # 启动所有服务
   log "启动 Docker Compose 服务..."
-  cd "${SCRIPT_DIR}"
-  
+  cd "${DOCKER_DIR}"  # 切换到 docker-compose.yml 所在目录
+
   # 根据 USE_BUILTIN_MYSQL 开关决定是否启用内置 MySQL
   local profiles="full-stack"
   if [[ "${USE_BUILTIN_MYSQL}" == "true" ]]; then
     log "使用内置 MySQL"
     profiles="full-stack,builtin-mysql"
     export COMPOSE_PROFILES="${profiles}"
-    docker-compose up -d
+    docker-compose --env-file "${DATA_DIR}/.env" up -d
   else
     log "使用外置 MySQL (DB_HOST=${DB_HOST})"
     # 验证外置 MySQL 配置
@@ -245,29 +246,29 @@ deploy_all() {
       exit 1
     fi
     export COMPOSE_PROFILES="${profiles}"
-    docker-compose up -d
+    docker-compose --env-file "${DATA_DIR}/.env" up -d
   fi
-  
+
   # 等待核心服务就绪
   log "等待核心服务启动..."
-  
+
   # 只有使用内置 MySQL 时才等待 MySQL 服务
   if [[ "${USE_BUILTIN_MYSQL}" == "true" ]]; then
     wait_service "mysql" 120
   else
     log "跳过内置 MySQL 等待（使用外置 MySQL）"
   fi
-  
+
   wait_service "nacos" 180
   wait_service "redis-stack-server" 60
   wait_service "himarket-server" 180
   wait_service "himarket-admin" 120
   wait_service "himarket-frontend" 120
   wait_service "higress" 180
-  
+
   # 部署阶段完成后执行 post_ready 钩子（与 Helm 一致）
   run_hooks "post_ready" || log "警告：post_ready 钩子执行失败"
-  
+
   log "======================================="
   log "✓ 全栈部署完成！"
   log "========================================"
@@ -294,25 +295,25 @@ uninstall_all() {
   log "========================================"
   log "开始卸载 Himarket All-in-One..."
   log "========================================"
-  
-  cd "${SCRIPT_DIR}"
-  
+
+  cd "${DOCKER_DIR}"  # 切换到 docker-compose.yml 所在目录
+
   log "停止并删除所有容器..."
-  docker-compose down
-  
+  docker-compose --env-file "${DATA_DIR}/.env" down
+
   log "清理数据卷（可选）..."
   read -p "是否删除数据卷？这将清除所有数据 (y/N): " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     log "删除数据卷..."
-    docker-compose down -v
-    rm -rf "${SCRIPT_DIR}/data/mysql"
-    rm -rf "${SCRIPT_DIR}/data/nacos-mysql"
+    docker-compose --env-file "${DATA_DIR}/.env" down -v
+    rm -rf "${DOCKER_DIR}/data/mysql"
+    rm -rf "${DOCKER_DIR}/data/nacos-mysql"
     log "数据卷已删除"
   else
     log "数据卷已保留"
   fi
-  
+
   log "========================================"
   log "✓ 卸载完成"
   log "========================================"
@@ -323,7 +324,7 @@ uninstall_all() {
 ########################################
 main() {
   local action="${1:-install}"
-  
+
   case "$action" in
     install)
       deploy_all
