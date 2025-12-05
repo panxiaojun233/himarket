@@ -1,87 +1,91 @@
-import React from 'react';
-import styles from './AgentCard.module.css';
-import commonStyles from './CommonCard.module.css';
-import CommonCard from './CommonCard';
-import ArrowIcon from './ArrowIcon';
+import Person1 from "../../assets/person1.svg";
+import Person2 from "../../assets/person2.svg";
+import Person3 from "../../assets/person3.svg";
+import Person4 from "../../assets/person4.svg";
+import More from "../../assets/more.svg";
+import Circle from "./circle";
+import { ArrowRight } from "../icon";
+import CommonCard from "./CommonCard";
 
-interface AgentCardProps {
-  onClick?: () => void;
-}
-
-// 图标配置数据
-const ICON_CONFIGS = [
-  {
-    className: 'icon1',
-    src: 'https://img.alicdn.com/imgextra/i4/6000000007431/O1CN01uEwB3b24lSGtXHUT1_!!6000000007431-2-gg_dtc.png',
-  },
-  {
-    className: 'icon2',
-    src: 'https://img.alicdn.com/imgextra/i4/6000000005762/O1CN016vnqPJ1sR3Emi7EAd_!!6000000005762-2-gg_dtc.png',
-  },
-  {
-    className: 'icon3',
-    src: 'https://img.alicdn.com/imgextra/i1/6000000005201/O1CN01Zr8fcn1oI72ptwPCR_!!6000000005201-2-gg_dtc.png',
-  },
-  {
-    className: 'icon4',
-    src: 'https://img.alicdn.com/imgextra/i4/6000000003603/O1CN01BPAzi01cUE8Er8PgP_!!6000000003603-2-gg_dtc.png',
-  },
-  {
-    className: 'icon5',
-    src: 'https://img.alicdn.com/imgextra/i4/6000000006949/O1CN01KerPWm21ChMsC3GSz_!!6000000006949-2-gg_dtc.png',
-  },
-  {
-    className: 'icon6',
-    src: 'https://img.alicdn.com/imgextra/i2/6000000004304/O1CN01joOQVX1hfHm2AXuE6_!!6000000004304-2-gg_dtc.png',
-  },
-  {
-    className: 'icon7',
-    src: 'https://img.alicdn.com/imgextra/i1/6000000004165/O1CN01LpQ1C81gdcijtUvAU_!!6000000004165-2-gg_dtc.png',
-  },
-] as const;
-
-const AgentCard: React.FC<AgentCardProps> = ({ onClick }) => {
+function HomeAgentCard() {
   return (
     <CommonCard to="/agents">
-      <div className={styles.agentCard} onClick={onClick}>
-        <span className={styles.title}>
-          <span className={styles.titleLabel}>智能体</span>
-        </span>
-        <div className={styles.iconList}>
-          {ICON_CONFIGS.map((icon, index) => (
-            <img
-              key={index}
-              className={styles[icon.className]}
-              src={icon.src}
-              alt=""
-            />
-          ))}
+      <div
+        className="absolute w-full h-full z-[1] animate-[fadeIn_0.8s_ease-out_0.2s_both]"
+        style={{
+          background: "linear-gradient(324deg, #C6C8FF 0%, #E1E2FF 21%, #FFFFFF 99%)",
+        }}
+      />
+      <div className="h-full relative z-[3] flex flex-col justify-between p-6">
+        <div className="h-full relative flex flex-col gap-4">
+          <div className="font-medium animate-[fadeInLeft_0.6s_ease-out_0.3s_both]">智能体市场</div>
+          <div className="flex pl-3">
+            {[
+              Person1, Person2, Person3, Person4, More,
+            ].map((img, index) => (
+              <img
+                key={index}
+                style={{
+                  marginLeft: -12,
+                  animationDelay: `${0.4 + index * 0.08}s`
+                }}
+                src={img}
+                className="animate-[fadeInScale_0.5s_ease-out_both] group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300"
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-8 mt-[20%]">
+            <div className="flex justify-end">
+              <TextTooltip className="flex-1 max-w-[90%] animate-[fadeInRight_0.7s_ease-out_0.65s_both] group-hover:translate-x-2 group-hover:scale-105 transition-all duration-300" style={{ boxShadow: "0px 4px 8px 0px rgba(24, 101, 255, 0.16)" }} placement="r" classNames={{ root: "bg-colorPrimaryBorderHover" }}>
+                <span className="text-white text-xs">帮我生成一个三日杭州旅行攻略</span>
+              </TextTooltip>
+            </div>
+            <div className="flex justify-start">
+              <TextTooltip className="flex-1 max-w-[90%] animate-[fadeInLeft_0.7s_ease-out_0.8s_both] group-hover:-translate-x-2 group-hover:scale-105 transition-all duration-300" style={{ boxShadow: "0px 8px 24px 0px rgba(71, 71, 235, 0.08)" }} placement="l" classNames={{ root: "bg-[#F9FAFB]" }}>
+                <div className="flex flex-col gap-2 w-full p-2">
+                  <span className="text-colorPrimaryBorderHover text-xs">
+                    正在为您生成旅行计划
+                  </span>
+                  <div className="w-full h-2 rounded group-hover:w-3/4 transition-all duration-300" style={{ background: "linear-gradient(90deg, rgba(224, 231, 255, 0.7) 0%, rgba(224, 231, 255, 0.2) 100%)" }}></div>
+                  <div className="w-full h-2 rounded group-hover:w-2/3 transition-all duration-300 delay-75" style={{ background: "linear-gradient(90deg, rgba(224, 231, 255, 0.7) 0%, rgba(224, 231, 255, 0.2) 100%)" }}></div>
+                </div>
+              </TextTooltip>
+            </div>
+          </div>
+          <div className="-z-10 flex-1 absolute w-full h-full animate-[fadeIn_1s_ease-out_0.5s_both]">
+            <div className="absolute bottom-0 h-3/4 left-[-20%] w-[140%]">
+              <div className="h-full grid grid-cols-3 grid-rows-3 gap-2 opacity-15">
+                {Array.from({ length: 9 }).map((_v, i) => (
+                  <div key={i} className="bg-white rounded-lg" />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className={styles.rightSection}>
-          <img
-            className={styles.rightImage}
-            src="https://img.alicdn.com/imgextra/i1/6000000005513/O1CN01C0pNK11qb0cLK9qrg_!!6000000005513-2-gg_dtc.png"
-          />
-        </div>
-        <div className={styles.topGradient}></div>
-
-        <div className={styles.bottomGradient}></div>
-        <img
-          className={styles.bottomLeftImage}
-          src="https://img.alicdn.com/imgextra/i2/O1CN01qh9GBE1Np5wSrTpt2_!!6000000001618-2-tps-1296-766.png"
-        />
-        <div className={styles.bottomRightSection}>
-          <img
-            className={styles.bottomRightImage}
-            src="https://img.alicdn.com/imgextra/i3/6000000001400/O1CN01EnLOVN1MDFbBnNJY4_!!6000000001400-2-gg_dtc.png"
-          />
-        </div>
-        <div className={styles.topRightIcon}>
-          <ArrowIcon className={commonStyles.arrowRightIcon} />
+        <div className="animate-[scaleIn_0.5s_ease-out_0.95s_both]">
+          <Circle className="w-8 h-8 inline-flex group-hover:w-auto group-hover:px-4 transition-all duration-500 ease-out group-hover:bg-black group-hover:border-transparent">
+            <span className="max-w-0 overflow-hidden opacity-0 group-hover:max-w-xs group-hover:opacity-100 group-hover:mr-2 transition-all duration-500 ease-out text-white whitespace-nowrap text-sm font-medium">
+              立即体验
+            </span>
+            <ArrowRight className="fill-mainTitle group-hover:fill-white transition-colors duration-500 ease-out" />
+          </Circle>
         </div>
       </div>
     </CommonCard>
-  );
-};
+  )
+}
 
-export default AgentCard;
+
+function TextTooltip({ className = "", placement, style, classNames = { root: "" }, children }: React.PropsWithChildren<{ style?: React.CSSProperties; classNames?: { root: string }; placement: "l" | "r"; className?: string }>) {
+  const p = placement === "r" ? "-right-1" : "-left-1"
+  return (
+    <div style={style} className={`flex items-center relative rounded-lg p-2  ${classNames.root} ${className}`}>
+      {children}
+      <div className={`
+        absolute w-3 h-3 rounded-[2px] top-1/2 -translate-y-1/2 ${p} rotate-45 ${classNames.root}
+        `}></div>
+    </div>
+  )
+}
+
+export default HomeAgentCard;

@@ -11,27 +11,25 @@ interface LayoutProps {
 
 export function Layout({ children, className = "", loading = false }: LayoutProps) {
   return (
-    <div
-      className={`min-h-screen ${className}`}
-      style={{
-        // background: "linear-gradient(254deg, rgba(234, 228, 248, .7) 32%, rgba(215, 229, 243, 0.7) 93%)",
-        backdropFilter: "blur(82px)",
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-      }}
-    >
+    <div className={`min-h-screen ${className}`} >
       <div
-        className="min-h-screen"
+        className={`min-h-screen  fixed w-full h-full z-[1]`}
         style={{
-          backdropFilter: 'blur(204px)',
-          WebkitBackdropFilter: 'blur(204px)',
+          // background: "linear-gradient(254deg, rgba(234, 228, 248, .7) 32%, rgba(215, 229, 243, 0.7) 93%)",
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
         }}
-      >
-        <Header />
-        <main className="min-h-[calc(100vh-96px)]">
+      ></div>
+      <div
+        className={`min-h-screen  fixed w-full h-full z-[2]`}
+        style={{ backdropFilter: 'blur(204px)' }}
+      ></div>
+      <Header />
+      <div className="h-full relative z-10">
+        <main className="h-full">
           <div className="w-full mx-auto px-8">
             {loading ? (
               <div className="space-y-8 py-8">
