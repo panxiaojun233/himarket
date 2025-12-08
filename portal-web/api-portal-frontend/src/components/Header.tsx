@@ -32,7 +32,7 @@ export function Header() {
   return (
     <nav
       className={`
-        sticky top-0 z-50 transition-all duration-1000 ease-in-out
+        sticky top-0 z-50 transition-all duration-1000 ease-in-out h-auto
         ${isScrolled
           ? "bg-gray-100/90 shadow-sm"
           : "backdrop-blur-md bg-transparent"
