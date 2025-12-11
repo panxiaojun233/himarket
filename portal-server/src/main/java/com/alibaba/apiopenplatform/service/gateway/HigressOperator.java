@@ -160,7 +160,7 @@ public class HigressOperator extends GatewayOperator<HigressClient> {
         boolean isDirect = "direct_route".equalsIgnoreCase(higressMCPConfig.getType());
         DirectRouteConfig directRouteConfig = higressMCPConfig.getDirectRouteConfig();
         String transportType = isDirect ? directRouteConfig.getTransportType() : null;
-        String path = isDirect ? directRouteConfig.getPath() : "/mcp-servers/" + higressMCPConfig.getName();
+        String path = "/mcp-servers/" + higressMCPConfig.getName();
 
         c.setPath(path);
         List<String> domains = higressMCPConfig.getDomains();
