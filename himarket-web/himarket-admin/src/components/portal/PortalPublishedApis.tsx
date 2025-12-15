@@ -18,12 +18,12 @@ export function PortalPublishedApis({ portal }: PortalApiProductsProps) {
   const [selectedApiIds, setSelectedApiIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [modalLoading, setModalLoading] = useState(false)
-  
+
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
-  
+
   useEffect(() => {
     if (portal.portalId) {
       fetchApiProducts()
@@ -53,7 +53,7 @@ export function PortalPublishedApis({ portal }: PortalApiProductsProps) {
         status: 'READY'
       }).then((res) => {
         // 过滤掉已发布在该门户里的api
-        setApiProductsOptions(res.data.content.filter((api: ApiProduct) => 
+        setApiProductsOptions(res.data.content.filter((api: ApiProduct) =>
           !apiProducts.some((a: ApiProduct) => a.productId === api.productId)
         ))
       }).finally(() => {
@@ -105,14 +105,16 @@ export function PortalPublishedApis({ portal }: PortalApiProductsProps) {
       width: 180,
       render: (_: any, record: ApiProduct) => (
         <Space size="middle">
-          <Button
+          <div
             onClick={() => {
               navigate(`/api-products/detail?productId=${record.productId}`)
             }}
-            type="link" icon={<EyeOutlined />}>
+            className='flex gap-2 text-colorPrimary/80 cursor-pointer hover:text-colorPrimary'
+          >
+            <EyeOutlined />
             查看
-          </Button>
-          
+          </div>
+
           <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.productId, record.name)}>
             移除
           </Button>
@@ -214,8 +216,8 @@ export function PortalPublishedApis({ portal }: PortalApiProductsProps) {
       </div>
 
       <Card>
-        <Table 
-          columns={columns} 
+        <Table
+          columns={columns}
           dataSource={apiProducts}
           rowKey="productId"
           loading={loading}
@@ -272,4 +274,4 @@ export function PortalPublishedApis({ portal }: PortalApiProductsProps) {
       </Modal>
     </div>
   )
-} 
+}
