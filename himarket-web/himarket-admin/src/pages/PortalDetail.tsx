@@ -136,7 +136,7 @@ export default function PortalDetail() {
 
   const renderContent = () => {
     if (!portal) return null
-    
+
     switch (activeTab) {
       case "overview":
         return <PortalOverview portal={portal} onEdit={handleEdit} />
@@ -202,7 +202,7 @@ export default function PortalDetail() {
       <div className="w-64 border-r bg-white flex flex-col">
         {/* 返回按钮 */}
         <div className="pb-4 border-b">
-          <Button 
+          <Button
             type="text"
             // className="w-full justify-start text-gray-600 hover:text-gray-900"
             onClick={handleBackToPortals}
@@ -214,8 +214,8 @@ export default function PortalDetail() {
 
         {/* Portal 信息 */}
         <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-2">
-            <Title level={5} className="mb-0">{portal.name}</Title>
+          <div className="flex items-center justify-between">
+            <p className='font-medium text-sm mb-0'>{portal.name}</p>
             <Dropdown menu={{ items: dropdownItems }} trigger={['click']}>
               <Button type="text" icon={<MoreOutlined />} size="small" />
             </Dropdown>
@@ -232,8 +232,8 @@ export default function PortalDetail() {
                 onClick={() => handleTabChange(item.key)}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
                   activeTab === item.key
-                    ? "bg-blue-50 text-blue-600 border border-blue-200"
-                    : "hover:bg-gray-50 text-gray-700"
+                    ? "bg-colorPrimaryBg text-colorPrimary border border-colorPrimary/30"
+                    : "hover:bg-colorPrimaryHoverLight text-gray-700"
                 }`}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
@@ -262,4 +262,4 @@ export default function PortalDetail() {
       )}
     </div>
   )
-} 
+}
