@@ -21,7 +21,6 @@ package com.alibaba.himarket.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.himarket.core.constant.Resources;
 import com.alibaba.himarket.core.exception.BusinessException;
 import com.alibaba.himarket.core.exception.ErrorCode;
@@ -35,7 +34,7 @@ import com.alibaba.himarket.dto.params.nacos.UpdateNacosParam;
 import com.alibaba.himarket.dto.result.agent.AgentConfigResult;
 import com.alibaba.himarket.dto.result.agent.NacosAgentResult;
 import com.alibaba.himarket.dto.result.common.PageResult;
-import com.alibaba.himarket.dto.result.mcp.MCPConfigResult;
+import com.alibaba.himarket.dto.result.mcp.McpConfigResult;
 import com.alibaba.himarket.dto.result.mcp.NacosMCPServerResult;
 import com.alibaba.himarket.dto.result.nacos.MseNacosResult;
 import com.alibaba.himarket.dto.result.nacos.NacosNamespaceResult;
@@ -45,6 +44,7 @@ import com.alibaba.himarket.repository.NacosInstanceRepository;
 import com.alibaba.himarket.service.NacosService;
 import com.alibaba.himarket.support.enums.SourceType;
 import com.alibaba.himarket.support.product.NacosRefConfig;
+import com.alibaba.himarket.utils.JsonUtil;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
 import com.alibaba.nacos.api.ai.model.a2a.AgentCardVersionInfo;
@@ -324,8 +324,8 @@ public class NacosServiceImpl implements NacosService {
                 return null;
             }
 
-            MCPConfigResult mcpConfig = buildMCPConfigResult(detail);
-            return JSONUtil.toJsonStr(mcpConfig);
+            McpConfigResult mcpConfig = buildMCPConfigResult(detail);
+            return JsonUtil.toJson(mcpConfig);
         } catch (Exception e) {
             log.error("Error fetching Nacos MCP servers", e);
             throw new BusinessException(
@@ -333,11 +333,11 @@ public class NacosServiceImpl implements NacosService {
         }
     }
 
-    private MCPConfigResult buildMCPConfigResult(McpServerDetailInfo detail) {
-        MCPConfigResult mcpConfig = new MCPConfigResult();
+    private McpConfigResult buildMCPConfigResult(McpServerDetailInfo detail) {
+        McpConfigResult mcpConfig = new McpConfigResult();
         mcpConfig.setMcpServerName(detail.getName());
 
-        MCPConfigResult.MCPServerConfig serverConfig = new MCPConfigResult.MCPServerConfig();
+        McpConfigResult.McpServerConfig serverConfig = new McpConfigResult.McpServerConfig();
 
         if (detail.getLocalServerConfig() != null) {
             serverConfig.setRawConfig(detail.getLocalServerConfig());
@@ -369,7 +369,7 @@ public class NacosServiceImpl implements NacosService {
             mcpConfig.setTools(null);
         }
 
-        MCPConfigResult.McpMetadata meta = new MCPConfigResult.McpMetadata();
+        McpConfigResult.McpMetadata meta = new McpConfigResult.McpMetadata();
         meta.setSource(SourceType.NACOS.name());
         mcpConfig.setMeta(meta);
 
@@ -780,7 +780,7 @@ public class NacosServiceImpl implements NacosService {
             result.setMeta(meta); // 设置元数据到顶层
 
             // 4. 序列化为 JSON
-            return JSONUtil.toJsonStr(result);
+            return JsonUtil.toJson(result);
 
         } catch (Exception e) {
             log.error(

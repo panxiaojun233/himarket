@@ -1,15 +1,10 @@
 import { SearchOutlined, DownloadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { Modal, Input, Button, Alert, message, Space, Tag } from 'antd';
+import { Modal, Input, Button, Alert, message } from 'antd';
 import { useState, useCallback } from 'react';
 
-import { mcpVendorApi } from '@/lib/api';
-import type {
-  McpVendorType,
-  RemoteMcpItemResult,
-  RemoteMcpItemParam,
-  BatchImportResult,
-  VendorOption,
-} from '@/types/mcp-vendor';
+import { ImportResultModal, type ImportResultFailure } from '@/components/common/ImportResultModal';
+import { apiProductApi, mcpVendorApi } from '@/lib/api';
+import type { McpVendorType, RemoteMcpItemResult, VendorOption } from '@/types/mcp-vendor';
 import { VENDOR_OPTIONS } from '@/types/mcp-vendor';
 
 import RemoteMcpTable from './RemoteMcpTable';
@@ -18,6 +13,22 @@ interface ImportMcpModalProps {
   open: boolean;
   onClose: () => void;
   onImportSuccess: () => void;
+}
+
+interface ProductImportFailure {
+  resourceName?: string;
+  errorMessage?: string;
+}
+
+interface ProductImportResult {
+  successCount?: number;
+  failures?: ProductImportFailure[];
+}
+
+interface ImportResultState {
+  selectedCount: number;
+  successCount: number;
+  failures: ImportResultFailure[];
 }
 
 export default function ImportMcpModal({ onClose, onImportSuccess, open }: ImportMcpModalProps) {
@@ -30,10 +41,26 @@ export default function ImportMcpModal({ onClose, onImportSuccess, open }: Impor
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [importResult, setImportResult] = useState<BatchImportResult | null>(null);
+  const [importResult, setImportResult] = useState<ImportResultState | null>(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
   const selectedVendor = VENDOR_OPTIONS.find((v) => v.value === vendorType);
+
+  const resetBrowseState = useCallback(() => {
+    setStep('select');
+    setVendorType(null);
+    setItems([]);
+    setSelectedKeys([]);
+    setSelectedItems([]);
+    setKeyword('');
+    setError(null);
+    setPagination({ current: 1, pageSize: 10, total: 0 });
+  }, []);
+
+  const closeAfterImportSuccess = useCallback(() => {
+    resetBrowseState();
+    onClose();
+  }, [onClose, resetBrowseState]);
 
   const handleSelectVendor = useCallback((vendor: VendorOption) => {
     setVendorType(vendor.value);
@@ -47,14 +74,8 @@ export default function ImportMcpModal({ onClose, onImportSuccess, open }: Impor
   }, []);
 
   const handleBack = useCallback(() => {
-    setStep('select');
-    setVendorType(null);
-    setItems([]);
-    setSelectedKeys([]);
-    setSelectedItems([]);
-    setKeyword('');
-    setError(null);
-  }, []);
+    resetBrowseState();
+  }, [resetBrowseState]);
 
   const handleQuery = useCallback(
     async (page = 1, size = pagination.pageSize) => {
@@ -123,22 +144,12 @@ export default function ImportMcpModal({ onClose, onImportSuccess, open }: Impor
       return;
     }
     setImporting(true);
-    const hide = message.loading(
-      '正在导入，请稍候（每个 MCP 需要获取详情，可能需要一些时间）...',
-      0,
-    );
+    const hide = message.loading('正在导入，请稍候...', 0);
     try {
-      const importItems: RemoteMcpItemParam[] = selectedItems.map((item) => ({
-        connectionConfig: item.connectionConfig,
+      const importItems = selectedItems.map((item) => ({
         description: item.description,
-        displayName: item.displayName,
-        extraParams: item.extraParams,
-        icon: item.icon,
-        mcpName: item.mcpName,
-        protocolType: item.protocolType,
-        remoteId: item.remoteId,
-        repoUrl: item.repoUrl,
-        tags: item.tags,
+        resourceId: item.remoteId,
+        resourceName: item.displayName || item.mcpName || item.remoteId,
       }));
 
       // 使用 AbortController 设置前端超时保护（5 分钟）
@@ -147,24 +158,37 @@ export default function ImportMcpModal({ onClose, onImportSuccess, open }: Impor
 
       let res: unknown;
       try {
-        res = await mcpVendorApi.batchImport({ items: importItems, vendorType });
+        res = await apiProductApi.importProducts({
+          items: importItems,
+          productType: 'MCP_SERVER',
+          source: 'EXTERNAL',
+          sourceConfig: { provider: vendorType },
+        });
       } finally {
         clearTimeout(timeoutId);
       }
 
-      // 后端可能有全局响应包装 {code, message, data} 或直接返回 BatchImportResult
-      const result: BatchImportResult | null =
-        (res as { data?: { successCount?: number } }).data?.successCount !== undefined
-          ? ((res as { data?: BatchImportResult }).data ?? null)
-          : (res as { successCount?: number }).successCount !== undefined
-            ? (res as BatchImportResult)
-            : null;
+      const result =
+        (res as { data?: ProductImportResult }).data ?? (res as ProductImportResult | null);
       if (result && typeof result.successCount === 'number') {
-        setImportResult(result);
-        onImportSuccess();
+        const failures = result.failures ?? [];
+        if (failures.length > 0) {
+          setImportResult({
+            failures,
+            selectedCount: selectedItems.length,
+            successCount: result.successCount,
+          });
+          onImportSuccess();
+          closeAfterImportSuccess();
+        } else {
+          message.success(`成功导入 ${result.successCount} 个 MCP Server`);
+          onImportSuccess();
+          closeAfterImportSuccess();
+        }
       } else {
         message.success('导入完成');
         onImportSuccess();
+        closeAfterImportSuccess();
       }
     } catch (err: unknown) {
       if (
@@ -185,20 +209,13 @@ export default function ImportMcpModal({ onClose, onImportSuccess, open }: Impor
       hide();
       setImporting(false);
     }
-  }, [selectedItems, vendorType, onImportSuccess]);
+  }, [closeAfterImportSuccess, selectedItems, vendorType, onImportSuccess]);
 
   const handleClose = useCallback(() => {
-    setStep('select');
-    setVendorType(null);
-    setItems([]);
-    setSelectedKeys([]);
-    setSelectedItems([]);
-    setKeyword('');
-    setError(null);
+    resetBrowseState();
     setImportResult(null);
-    setPagination({ current: 1, pageSize: 10, total: 0 });
     onClose();
-  }, [onClose]);
+  }, [onClose, resetBrowseState]);
 
   const handleCloseResult = useCallback(() => {
     setImportResult(null);
@@ -355,75 +372,13 @@ export default function ImportMcpModal({ onClose, onImportSuccess, open }: Impor
         )}
       </Modal>
 
-      {/* Import result modal */}
-      <Modal
-        cancelButtonProps={{ style: { display: 'none' } }}
-        okText="确定"
-        onCancel={handleCloseResult}
-        onOk={handleCloseResult}
+      <ImportResultModal
+        failures={importResult?.failures ?? []}
+        onClose={handleCloseResult}
         open={!!importResult}
-        title="导入结果"
-        width={600}
-      >
-        {importResult && (
-          <div className="space-y-4">
-            <div className="flex gap-4 justify-center py-2">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{importResult.successCount}</div>
-                <div className="text-xs text-gray-500 mt-1">成功</div>
-              </div>
-              <div className="w-px bg-gray-200" />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-500">
-                  {importResult.skippedCount}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">跳过</div>
-              </div>
-              <div className="w-px bg-gray-200" />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-500">{importResult.failedCount}</div>
-                <div className="text-xs text-gray-500 mt-1">失败</div>
-              </div>
-            </div>
-            {importResult.details.length > 0 && (
-              <div className="max-h-60 overflow-y-auto rounded-lg border border-gray-100">
-                {importResult.details.map((detail, idx) => (
-                  <div
-                    className={`flex items-center justify-between px-4 py-2.5 ${idx < importResult.details.length - 1 ? 'border-b border-gray-50' : ''}`}
-                    key={detail.mcpName}
-                  >
-                    <span className="text-sm font-mono text-gray-700 truncate max-w-[300px]">
-                      {detail.mcpName}
-                    </span>
-                    <Space>
-                      <Tag
-                        color={
-                          detail.status === 'SUCCESS'
-                            ? 'success'
-                            : detail.status === 'SKIPPED'
-                              ? 'warning'
-                              : 'error'
-                        }
-                      >
-                        {detail.status === 'SUCCESS'
-                          ? '成功'
-                          : detail.status === 'SKIPPED'
-                            ? '已跳过'
-                            : '失败'}
-                      </Tag>
-                      {detail.message && (
-                        <span className="text-xs text-red-500 max-w-[150px] truncate">
-                          {detail.message}
-                        </span>
-                      )}
-                    </Space>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
+        selectedCount={importResult?.selectedCount ?? 0}
+        successCount={importResult?.successCount ?? 0}
+      />
     </>
   );
 }

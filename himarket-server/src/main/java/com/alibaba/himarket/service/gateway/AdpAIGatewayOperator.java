@@ -20,41 +20,49 @@
 package com.alibaba.himarket.service.gateway;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.himarket.core.exception.BusinessException;
 import com.alibaba.himarket.core.exception.ErrorCode;
 import com.alibaba.himarket.dto.params.gateway.QueryAdpAIGatewayParam;
 import com.alibaba.himarket.dto.result.agent.AgentAPIResult;
 import com.alibaba.himarket.dto.result.common.DomainResult;
 import com.alibaba.himarket.dto.result.common.PageResult;
+import com.alibaba.himarket.dto.result.consumer.CredentialContext;
 import com.alibaba.himarket.dto.result.gateway.AdpGatewayInstanceResult;
 import com.alibaba.himarket.dto.result.gateway.GatewayResult;
 import com.alibaba.himarket.dto.result.httpapi.APIResult;
 import com.alibaba.himarket.dto.result.httpapi.HttpRouteResult;
 import com.alibaba.himarket.dto.result.httpapi.ServiceResult;
 import com.alibaba.himarket.dto.result.mcp.AdpMcpServerListResult;
-import com.alibaba.himarket.dto.result.mcp.GatewayMCPServerResult;
-import com.alibaba.himarket.dto.result.mcp.MCPConfigResult;
+import com.alibaba.himarket.dto.result.mcp.GatewayMcpServerResult;
+import com.alibaba.himarket.dto.result.mcp.McpConfigResult;
 import com.alibaba.himarket.dto.result.model.AIGWModelAPIResult;
 import com.alibaba.himarket.dto.result.model.GatewayModelAPIResult;
 import com.alibaba.himarket.dto.result.model.ModelConfigResult;
 import com.alibaba.himarket.entity.Consumer;
 import com.alibaba.himarket.entity.ConsumerCredential;
 import com.alibaba.himarket.entity.Gateway;
+import com.alibaba.himarket.entity.ProductRef;
 import com.alibaba.himarket.service.gateway.client.AdpAIGatewayClient;
 import com.alibaba.himarket.support.consumer.AdpAIAuthConfig;
 import com.alibaba.himarket.support.consumer.ConsumerAuthConfig;
 import com.alibaba.himarket.support.enums.GatewayType;
+import com.alibaba.himarket.support.enums.McpFromType;
+import com.alibaba.himarket.support.enums.ProductType;
 import com.alibaba.himarket.support.gateway.AdpAIGatewayConfig;
 import com.alibaba.himarket.support.gateway.GatewayConfig;
 import com.alibaba.himarket.support.product.APIGRefConfig;
+import com.alibaba.himarket.utils.JsonUtil;
 import com.aliyun.sdk.service.apig20240327.models.HttpApiApiInfo;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +76,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AdpAIGatewayOperator extends GatewayOperator {
 
+    private final Map configGeneratorRegistry;
+
+    public AdpAIGatewayOperator(Map configGeneratorRegistry) {
+        super();
+        this.configGeneratorRegistry = configGeneratorRegistry;
+    }
+
     @Override
     public PageResult<APIResult> fetchHTTPAPIs(Gateway gateway, int page, int size) {
         return null;
@@ -79,7 +94,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     }
 
     @Override
-    public PageResult<? extends GatewayMCPServerResult> fetchMcpServers(
+    public PageResult<? extends GatewayMcpServerResult> fetchMcpServers(
             Gateway gateway, int page, int size) {
         AdpAIGatewayConfig config = gateway.getAdpAIGatewayConfig();
         if (config == null) {
@@ -109,7 +124,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                 if (result.getCode() != null
                         && result.getCode() == 200
                         && result.getData() != null) {
-                    List<GatewayMCPServerResult> items = new ArrayList<>();
+                    List<GatewayMcpServerResult> items = new ArrayList<>();
                     if (result.getData().getRecords() != null) {
                         items.addAll(result.getData().getRecords());
                     }
@@ -314,18 +329,19 @@ public class AdpAIGatewayOperator extends GatewayOperator {
     }
 
     @Override
-    public String fetchMcpToolsForConfig(Gateway gateway, Object conf) {
+    public CredentialContext fetchApiCredential(
+            Gateway gateway, ProductType productType, ProductRef productRef) {
         return null;
     }
 
     /** 将 ADP MCP Server 详情转换为 MCPConfigResult 格式 */
     private String convertToMCPConfig(
             AdpMcpServerDetailResult.AdpMcpServerDetail data, AdpAIGatewayConfig config) {
-        MCPConfigResult mcpConfig = new MCPConfigResult();
+        McpConfigResult mcpConfig = new McpConfigResult();
         mcpConfig.setMcpServerName(data.getName());
 
         // 设置 MCP Server 配置
-        MCPConfigResult.MCPServerConfig serverConfig = new MCPConfigResult.MCPServerConfig();
+        McpConfigResult.McpServerConfig serverConfig = new McpConfigResult.McpServerConfig();
         serverConfig.setPath("/mcp-servers/" + data.getName());
 
         // 获取网关实例访问信息并设置域名信息
@@ -354,13 +370,16 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         // 设置工具配置
         mcpConfig.setTools(data.getRawConfigurations());
 
-        // 设置元数据
-        MCPConfigResult.McpMetadata meta = new MCPConfigResult.McpMetadata();
+        mcpConfig.setFromType(
+                "OPEN_API".equalsIgnoreCase(data.getType())
+                        ? McpFromType.HTTP_TO_MCP
+                        : McpFromType.NATIVE_MCP);
+
+        McpConfigResult.McpMetadata meta = new McpConfigResult.McpMetadata();
         meta.setSource(GatewayType.ADP_AI_GATEWAY.name());
-        meta.setCreateFromType(data.getType());
         mcpConfig.setMeta(meta);
 
-        return JSONUtil.toJsonStr(mcpConfig);
+        return JsonUtil.toJson(mcpConfig);
     }
 
     /** 获取网关实例的访问信息并构建域名列表 */
@@ -378,20 +397,24 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject root = JSONUtil.parseObj(response.getBody());
-                Integer code = root.getInt("code");
-                if (code != null && code == 200 && root.containsKey("data")) {
-                    cn.hutool.json.JSONObject dataObj = root.getJSONObject("data");
-                    if (dataObj != null && dataObj.containsKey("accessMode")) {
-                        cn.hutool.json.JSONArray arr = dataObj.getJSONArray("accessMode");
+                ObjectNode root = JsonUtil.readObjectNode(response.getBody());
+                int code = root.path("code").asInt();
+                if (code == 200 && root.has("data")) {
+                    ObjectNode dataObj = (ObjectNode) root.get("data");
+                    if (dataObj != null && dataObj.has("accessMode")) {
+                        ArrayNode arr = (ArrayNode) dataObj.get("accessMode");
                         List<AdpGatewayInstanceResult.AccessMode> accessModes =
-                                JSONUtil.toList(arr, AdpGatewayInstanceResult.AccessMode.class);
+                                JsonUtil.convertToList(
+                                        arr, AdpGatewayInstanceResult.AccessMode.class);
                         return buildDomainsFromAccessModes(accessModes);
                     }
                     log.warn("Gateway instance has no accessMode, instanceId={}", gwInstanceId);
                     return null;
                 }
-                String message = root.getStr("message", root.getStr("msg"));
+                String message = root.has("message") ? root.get("message").asText() : null;
+                if (message == null || message.isEmpty()) {
+                    message = root.has("msg") ? root.get("msg").asText() : null;
+                }
                 log.warn("Failed to get gateway instance access info: {}", message);
                 return null;
             }
@@ -538,7 +561,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         ModelConfigResult modelConfig = new ModelConfigResult();
         modelConfig.setModelAPIConfig(apiConfig);
 
-        return JSONUtil.toJsonStr(modelConfig);
+        return JsonUtil.toJson(modelConfig);
     }
 
     /** 从ADP服务数据构建路由列表 */
@@ -641,12 +664,6 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "ADP AI Gateway配置缺失");
         }
 
-        // 从 GatewayConfig 中获取 Gateway 实体，与 fetchMcpConfig 方法保持一致
-        Gateway gateway = config.getGateway();
-        if (gateway == null || gateway.getGatewayId() == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "网关实例ID缺失");
-        }
-
         // 使用 developerId 后8位作为后缀，避免不同 developer 的 consumer 名称冲突
         String mark =
                 consumer.getDeveloperId()
@@ -656,20 +673,20 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
         try {
             // 构建请求参数
-            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
-            requestData.set("authType", 5);
-            requestData.set("apiKeyLocationType", "BEARER");
+            ObjectNode requestData = JsonUtil.createObjectNode();
+            requestData.put("authType", 5);
+            requestData.put("apiKeyLocationType", "BEARER");
 
             // 从凭证中获取key
             if (credential.getApiKeyConfig() != null
                     && credential.getApiKeyConfig().getCredentials() != null
                     && !credential.getApiKeyConfig().getCredentials().isEmpty()) {
                 String key = credential.getApiKeyConfig().getCredentials().get(0).getApiKey();
-                requestData.set("key", key);
+                requestData.put("key", key);
             }
 
-            requestData.set("appName", gwConsumerName);
-            requestData.set("gwInstanceId", gateway.getGatewayId());
+            requestData.put("appName", gwConsumerName);
+            requestData.put("gwInstanceId", config.getGatewayId());
 
             String url = client.getFullUrl("/application/createApp");
             String requestBody = requestData.toString();
@@ -707,26 +724,26 @@ public class AdpAIGatewayOperator extends GatewayOperator {
      */
     private String extractConsumerIdFromResponse(String responseBody, String defaultConsumerId) {
         try {
-            cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(responseBody);
+            ObjectNode responseJson = JsonUtil.readObjectNode(responseBody);
             // ADP AI网关的/application/createApp接口，成功时返回格式: {"code": 200, "data": "appName"}
-            if (responseJson.getInt("code", 0) == 200 && responseJson.containsKey("data")) {
-                Object dataObj = responseJson.get("data");
-                if (dataObj != null) {
+            if (responseJson.path("code").asInt(0) == 200 && responseJson.has("data")) {
+                JsonNode dataNode = responseJson.get("data");
+                if (dataNode != null && !dataNode.isNull()) {
                     // data字段就是appName，直接返回
-                    if (dataObj instanceof String) {
-                        return (String) dataObj;
+                    if (dataNode.isTextual()) {
+                        return dataNode.asText();
                     }
                     // 如果data是对象类型，则按原逻辑处理（兼容性考虑）
-                    if (dataObj instanceof cn.hutool.json.JSONObject) {
-                        cn.hutool.json.JSONObject data = (cn.hutool.json.JSONObject) dataObj;
-                        if (data.containsKey("applicationId")) {
-                            return data.getStr("applicationId");
+                    if (dataNode.isObject()) {
+                        ObjectNode data = (ObjectNode) dataNode;
+                        if (data.has("applicationId")) {
+                            return data.path("applicationId").asText(null);
                         }
                         // 如果没有applicationId字段，将整个data对象转为字符串
                         return data.toString();
                     }
                     // 其他类型直接转为字符串
-                    return dataObj.toString();
+                    return dataNode.toString();
                 }
             }
             // 如果无法解析，使用应用名称作为fallback
@@ -743,11 +760,6 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         AdpAIGatewayConfig adpConfig = config.getAdpAIGatewayConfig();
         if (adpConfig == null) {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "ADP AI Gateway配置缺失");
-        }
-
-        Gateway gateway = config.getGateway();
-        if (gateway == null || gateway.getGatewayId() == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "网关实例ID缺失");
         }
 
         AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
@@ -773,19 +785,21 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             Boolean enable = true; // 启用状态
 
             // 构建请求体
-            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
-            requestData.set("appId", appId);
-            requestData.set("appName", appName);
-            requestData.set("authType", authType);
-            requestData.set("apiKeyLocationType", "BEARER");
-            requestData.set("authTypeName", authTypeName);
-            requestData.set("description", description);
-            requestData.set("enable", enable);
+            ObjectNode requestData = JsonUtil.createObjectNode();
+            requestData.put("appId", appId);
+            requestData.put("appName", appName);
+            requestData.put("authType", authType);
+            requestData.put("apiKeyLocationType", "BEARER");
+            requestData.put("authTypeName", authTypeName);
+            requestData.put("description", description);
+            requestData.put("enable", enable);
             if (apiKey != null) {
-                requestData.set("key", apiKey);
+                requestData.put("key", apiKey);
             }
-            requestData.set("groups", Collections.singletonList("true"));
-            requestData.set("gwInstanceId", gateway.getGatewayId());
+            ArrayNode groupsArr = JsonUtil.createArray();
+            groupsArr.add("true");
+            requestData.set("groups", groupsArr);
+            requestData.put("gwInstanceId", config.getGatewayId());
 
             String requestBody = requestData.toString();
             HttpEntity<String> requestEntity = client.createRequestEntity(requestBody);
@@ -797,17 +811,23 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
-                if (code != null && code == 200) {
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
+                if (code == 200) {
                     log.info(
                             "Successfully updated consumer {} in ADP gateway instance {}",
                             consumerId,
-                            gateway.getGatewayId());
+                            config.getGatewayId());
                     return;
                 }
                 String message =
-                        responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                        responseJson.has("message") ? responseJson.get("message").asText() : null;
+                if (message == null || message.isEmpty()) {
+                    message =
+                            responseJson.has("msg")
+                                    ? responseJson.get("msg").asText()
+                                    : "Unknown error";
+                }
                 throw new BusinessException(ErrorCode.GATEWAY_ERROR, "更新ADP网关消费者失败: " + message);
             }
             throw new BusinessException(
@@ -818,7 +838,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             log.error(
                     "Error updating consumer {} in ADP gateway instance {}",
                     consumerId,
-                    gateway != null ? gateway.getGatewayId() : "unknown",
+                    config.getGatewayId(),
                     e);
             throw new BusinessException(
                     ErrorCode.INTERNAL_ERROR, "更新ADP网关消费者异常: " + e.getMessage());
@@ -834,11 +854,6 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             throw new BusinessException(ErrorCode.INVALID_PARAMETER, "ADP AI Gateway配置缺失");
         }
 
-        Gateway gateway = config.getGateway();
-        if (gateway == null || gateway.getGatewayId() == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAMETER, "网关实例ID缺失");
-        }
-
         AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
         try {
 
@@ -846,7 +861,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             String requestBody =
                     String.format(
                             "{\"appId\": \"%s\", \"gwInstanceId\": \"%s\"}",
-                            consumerId, gateway.getGatewayId());
+                            consumerId, config.getGatewayId());
             HttpEntity<String> requestEntity = client.createRequestEntity(requestBody);
 
             log.info("Deleting consumer in ADP gateway: url={}, requestBody={}", url, requestBody);
@@ -856,17 +871,23 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
-                if (code != null && code == 200) {
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
+                if (code == 200) {
                     log.info(
                             "Successfully deleted consumer {} from ADP gateway instance {}",
                             consumerId,
-                            gateway.getGatewayId());
+                            config.getGatewayId());
                     return;
                 }
                 String message =
-                        responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                        responseJson.has("message") ? responseJson.get("message").asText() : null;
+                if (message == null || message.isEmpty()) {
+                    message =
+                            responseJson.has("msg")
+                                    ? responseJson.get("msg").asText()
+                                    : "Unknown error";
+                }
                 throw new BusinessException(ErrorCode.GATEWAY_ERROR, "删除ADP网关消费者失败: " + message);
             }
             throw new BusinessException(
@@ -877,7 +898,7 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             log.error(
                     "Error deleting consumer {} from ADP gateway instance {}",
                     consumerId,
-                    gateway != null ? gateway.getGatewayId() : "unknown",
+                    config.getGatewayId(),
                     e);
             throw new BusinessException(
                     ErrorCode.INTERNAL_ERROR, "删除ADP网关消费者异常: " + e.getMessage());
@@ -896,18 +917,12 @@ public class AdpAIGatewayOperator extends GatewayOperator {
 
         AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
         try {
-            // 从 GatewayConfig 中获取 Gateway 实体
-            Gateway gateway = config.getGateway();
-            if (gateway == null || gateway.getGatewayId() == null) {
-                log.warn("网关实例ID缺失，无法检查消费者存在性");
-                return false;
-            }
 
             String url = client.getFullUrl("/application/getApp");
             String requestBody =
                     String.format(
                             "{\"%s\": \"%s\", \"%s\": \"%s\"}",
-                            "gwInstanceId", gateway.getGatewayId(), "appId", consumerId);
+                            "gwInstanceId", config.getGatewayId(), "appId", consumerId);
             HttpEntity<String> requestEntity = client.createRequestEntity(requestBody);
 
             ResponseEntity<String> response =
@@ -915,12 +930,11 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
                 // 如果返回200且有data，说明消费者存在
-                return code == 200
-                        && responseJson.containsKey("data")
-                        && responseJson.get("data") != null;
+                JsonNode dataNode = responseJson.get("data");
+                return code == 200 && dataNode != null && !dataNode.isNull();
             }
             return false;
         } catch (Exception e) {
@@ -983,11 +997,12 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         try {
             // 构建授权请求参数
             // 由于createConsumer返回的就是appName，所以consumerId就是应用名称
-            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
-            requestData.set("mcpServerName", apigRefConfig.getMcpServerName());
-            requestData.set(
-                    "consumers", Collections.singletonList(consumerId)); // consumerId就是appName
-            requestData.set("gwInstanceId", gateway.getGatewayId());
+            ObjectNode requestData = JsonUtil.createObjectNode();
+            requestData.put("mcpServerName", apigRefConfig.getMcpServerName());
+            ArrayNode consumersArr = JsonUtil.createArray();
+            consumersArr.add(consumerId); // consumerId就是appName
+            requestData.set("consumers", consumersArr);
+            requestData.put("gwInstanceId", gateway.getGatewayId());
 
             String url = client.getFullUrl("/mcpServer/addMcpServerConsumers");
             String requestBody = requestData.toString();
@@ -1001,8 +1016,8 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
 
                 if (code == 200) {
                     log.info(
@@ -1021,8 +1036,15 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                     return ConsumerAuthConfig.builder().adpAIAuthConfig(authConfig).build();
                 } else {
                     String message =
-                            responseJson.getStr(
-                                    "message", responseJson.getStr("msg", "Unknown error"));
+                            responseJson.has("message")
+                                    ? responseJson.get("message").asText()
+                                    : null;
+                    if (message == null || message.isEmpty()) {
+                        message =
+                                responseJson.has("msg")
+                                        ? responseJson.get("msg").asText()
+                                        : "Unknown error";
+                    }
                     throw new BusinessException(
                             ErrorCode.GATEWAY_ERROR,
                             "Failed to authorize consumer to MCP server: " + message);
@@ -1056,10 +1078,12 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         AdpAIGatewayClient client = new AdpAIGatewayClient(adpConfig);
         try {
             // 构建Model API授权请求参数
-            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
-            requestData.set("gwInstanceId", gateway.getGatewayId());
-            requestData.set("modelApiId", apigRefConfig.getModelApiId());
-            requestData.set("consumerIds", Collections.singletonList(consumerId));
+            ObjectNode requestData = JsonUtil.createObjectNode();
+            requestData.put("gwInstanceId", gateway.getGatewayId());
+            requestData.put("modelApiId", apigRefConfig.getModelApiId());
+            ArrayNode consumerIdsArr = JsonUtil.createArray();
+            consumerIdsArr.add(consumerId);
+            requestData.set("consumerIds", consumerIdsArr);
 
             String url = client.getFullUrl("/modelapi/batchGrantModelApi");
             String requestBody = requestData.toString();
@@ -1072,8 +1096,8 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
 
                 if (code == 200) {
                     log.info(
@@ -1083,8 +1107,15 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                     return;
                 } else {
                     String message =
-                            responseJson.getStr(
-                                    "message", responseJson.getStr("msg", "Unknown error"));
+                            responseJson.has("message")
+                                    ? responseJson.get("message").asText()
+                                    : null;
+                    if (message == null || message.isEmpty()) {
+                        message =
+                                responseJson.has("msg")
+                                        ? responseJson.get("msg").asText()
+                                        : "Unknown error";
+                    }
                     throw new BusinessException(
                             ErrorCode.GATEWAY_ERROR,
                             "Failed to authorize consumer to Model API: " + message);
@@ -1144,11 +1175,12 @@ public class AdpAIGatewayOperator extends GatewayOperator {
         try {
             // 构建撤销授权请求参数
             // 由于createConsumer返回的就是appName，所以consumerId就是应用名称
-            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
-            requestData.set("mcpServerName", adpAIAuthConfig.getMcpServerName());
-            requestData.set(
-                    "consumers", Collections.singletonList(consumerId)); // consumerId就是appName
-            requestData.set("gwInstanceId", gateway.getGatewayId());
+            ObjectNode requestData = JsonUtil.createObjectNode();
+            requestData.put("mcpServerName", adpAIAuthConfig.getMcpServerName());
+            ArrayNode consumersArr = JsonUtil.createArray();
+            consumersArr.add(consumerId); // consumerId就是appName
+            requestData.set("consumers", consumersArr);
+            requestData.put("gwInstanceId", gateway.getGatewayId());
 
             String url = client.getFullUrl("/mcpServer/deleteMcpServerConsumers");
             String requestBody = requestData.toString();
@@ -1164,8 +1196,8 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
 
                 if (code == 200) {
                     log.info(
@@ -1177,7 +1209,13 @@ public class AdpAIGatewayOperator extends GatewayOperator {
 
                 // 获取错误信息
                 String message =
-                        responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                        responseJson.has("message") ? responseJson.get("message").asText() : null;
+                if (message == null || message.isEmpty()) {
+                    message =
+                            responseJson.has("msg")
+                                    ? responseJson.get("msg").asText()
+                                    : "Unknown error";
+                }
 
                 // 如果是资源不存在（已被删除），只记录警告，不抛异常
                 if (message != null
@@ -1243,9 +1281,9 @@ public class AdpAIGatewayOperator extends GatewayOperator {
             }
 
             // 构建撤销Model API授权请求参数
-            cn.hutool.json.JSONObject requestData = JSONUtil.createObj();
-            requestData.set("gwInstanceId", gateway.getGatewayId());
-            requestData.set("authId", authId);
+            ObjectNode requestData = JsonUtil.createObjectNode();
+            requestData.put("gwInstanceId", gateway.getGatewayId());
+            requestData.put("authId", authId);
 
             String url = client.getFullUrl("/modelapi/revokeModelApiGrant");
             String requestBody = requestData.toString();
@@ -1261,8 +1299,8 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
 
                 if (code == 200) {
                     log.info(
@@ -1274,7 +1312,13 @@ public class AdpAIGatewayOperator extends GatewayOperator {
 
                 // 获取错误信息
                 String message =
-                        responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                        responseJson.has("message") ? responseJson.get("message").asText() : null;
+                if (message == null || message.isEmpty()) {
+                    message =
+                            responseJson.has("msg")
+                                    ? responseJson.get("msg").asText()
+                                    : "Unknown error";
+                }
 
                 // 如果是资源不存在（已被删除），只记录警告，不抛异常
                 if (message != null
@@ -1343,19 +1387,21 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                             .exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                cn.hutool.json.JSONObject responseJson = JSONUtil.parseObj(response.getBody());
-                Integer code = responseJson.getInt("code", 0);
+                ObjectNode responseJson = JsonUtil.readObjectNode(response.getBody());
+                int code = responseJson.path("code").asInt(0);
 
-                if (code != null && code == 200) {
+                if (code == 200) {
                     // 解析返回的授权信息，查找匹配的consumerId对应的authId
-                    cn.hutool.json.JSONObject data = responseJson.getJSONObject("data");
-                    if (data != null && data.containsKey("records")) {
-                        cn.hutool.json.JSONArray records = data.getJSONArray("records");
+                    ObjectNode data = (ObjectNode) responseJson.get("data");
+                    if (data != null && data.has("records")) {
+                        ArrayNode records = (ArrayNode) data.get("records");
                         if (records != null) {
                             for (int i = 0; i < records.size(); i++) {
-                                cn.hutool.json.JSONObject record = records.getJSONObject(i);
-                                String recordConsumerId = record.getStr("appId");
-                                String authId = record.getStr("authId"); // 根据实际API返回结构，授权ID字段可能是id
+                                ObjectNode record = (ObjectNode) records.get(i);
+                                String recordConsumerId = record.path("appId").asText(null);
+                                String authId =
+                                        record.path("authId")
+                                                .asText(null); // 根据实际API返回结构，授权ID字段可能是id
 
                                 if (consumerId.equals(recordConsumerId)) {
                                     return authId; // 找到匹配的authId
@@ -1366,7 +1412,13 @@ public class AdpAIGatewayOperator extends GatewayOperator {
                 }
 
                 String msg =
-                        responseJson.getStr("message", responseJson.getStr("msg", "Unknown error"));
+                        responseJson.has("message") ? responseJson.get("message").asText() : null;
+                if (msg == null || msg.isEmpty()) {
+                    msg =
+                            responseJson.has("msg")
+                                    ? responseJson.get("msg").asText()
+                                    : "Unknown error";
+                }
                 log.warn("Failed to get model API consumers for authId lookup: {}", msg);
             }
 

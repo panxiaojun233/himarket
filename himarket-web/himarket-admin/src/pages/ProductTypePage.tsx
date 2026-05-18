@@ -1,55 +1,69 @@
-import { PlusOutlined, ImportOutlined } from '@ant-design/icons';
-import { Button, Modal, message } from 'antd';
+import { PlusOutlined, ImportOutlined, DownOutlined } from '@ant-design/icons';
+import { Button, Modal, message, Dropdown } from 'antd';
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import ImportProductsModal from '@/components/api-product/ImportProductsModal';
 import ProductTable from '@/components/api-product/ProductTable';
 import type { ProductTableRef } from '@/components/api-product/ProductTable';
-import McpCreationSelector from '@/components/mcp-creation/McpCreationSelector';
-import McpStepWizard from '@/components/mcp-creation/McpStepWizard';
-import type { CreationMode } from '@/components/mcp-creation/types';
 import ImportMcpModal from '@/components/mcp-vendor/ImportMcpModal';
 import { nacosApi, workerApi, skillApi } from '@/lib/api';
 import type { NacosInstance } from '@/types/gateway';
 
-// 产品类型标题映射
-const TYPE_TITLES: Record<string, string> = {
-  AGENT_API: 'Agent API Products',
-  AGENT_SKILL: 'Agent Skill Products',
-  MCP_SERVER: 'MCP Server Products',
-  MODEL_API: 'Model API Products',
-  REST_API: 'REST API Products',
-  WORKER: 'Worker Products',
-};
+import type { MenuProps } from 'antd';
 
-const TYPE_SUBTITLES: Record<string, string> = {
-  AGENT_API: '管理和配置您的 Agent API 产品',
-  AGENT_SKILL: '管理和配置您的 Agent Skill 产品',
-  MCP_SERVER: '管理和配置您的 MCP Server 产品',
-  MODEL_API: '管理和配置您的 Model API 产品',
-  REST_API: '管理和配置您的 REST API 产品',
-  WORKER: '管理和配置您的 Worker 产品',
-};
+type ProductType = 'MODEL_API' | 'MCP_SERVER' | 'AGENT_SKILL' | 'WORKER' | 'AGENT_API' | 'REST_API';
+type StandardImportSource = 'GATEWAY' | 'NACOS';
+type ImportMenuItems = NonNullable<MenuProps['items']>;
+
+const PRODUCT_TYPES = [
+  { key: 'MODEL_API' as const, label: 'Model API', path: 'model-api' },
+  { key: 'MCP_SERVER' as const, label: 'MCP Server', path: 'mcp-server' },
+  { key: 'AGENT_API' as const, label: 'Agent API', path: 'agent-api' },
+  { key: 'AGENT_SKILL' as const, label: 'Agent Skill', path: 'agent-skill' },
+  { key: 'WORKER' as const, label: 'Worker', path: 'worker' },
+  { key: 'REST_API' as const, label: 'REST API', path: 'rest-api' },
+];
 
 interface ProductTypePageProps {
-  productType: 'MODEL_API' | 'MCP_SERVER' | 'AGENT_SKILL' | 'WORKER' | 'AGENT_API' | 'REST_API';
+  productType: ProductType;
+}
+
+function getImportMenuItems(productType: ProductType): ImportMenuItems {
+  switch (productType) {
+    case 'MCP_SERVER':
+      return [
+        { key: 'GATEWAY', label: '从网关导入' },
+        { key: 'NACOS', label: '从 Nacos 导入' },
+        { type: 'divider' },
+        { key: 'MARKET', label: '从第三方市场导入' },
+      ];
+    case 'AGENT_API':
+      return [
+        { key: 'GATEWAY', label: '从网关导入' },
+        { key: 'NACOS', label: '从 Nacos 导入' },
+      ];
+    case 'MODEL_API':
+    case 'REST_API':
+      return [{ key: 'GATEWAY', label: '从网关导入' }];
+    default:
+      return [];
+  }
 }
 
 const ProductTypePage: React.FC<ProductTypePageProps> = ({ productType }) => {
+  const navigate = useNavigate();
   const tableRef = useRef<ProductTableRef>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [defaultNacos, setDefaultNacos] = useState<NacosInstance | null>(null);
   const [importModalVisible, setImportModalVisible] = useState(false);
-
-  const showNacosImport = productType === 'AGENT_SKILL' || productType === 'WORKER';
-  const showBatchImport = productType !== 'AGENT_SKILL' && productType !== 'WORKER';
-  const isMcpServer = productType === 'MCP_SERVER';
+  const [importSource, setImportSource] = useState<StandardImportSource | null>(null);
   const [mcpImportOpen, setMcpImportOpen] = useState(false);
 
-  // Unified MCP creation flow state
-  const [selectorVisible, setSelectorVisible] = useState(false);
-  const [wizardVisible, setWizardVisible] = useState(false);
-  const [wizardMode, setWizardMode] = useState<Exclude<CreationMode, 'vendor'>>('manual');
+  const showNacosImport = productType === 'AGENT_SKILL' || productType === 'WORKER';
+  const showImportMenu = productType !== 'AGENT_SKILL' && productType !== 'WORKER';
+  const isMcpServer = productType === 'MCP_SERVER';
+  const importMenuItems = getImportMenuItems(productType);
 
   // Fetch default Nacos instance for import feature
   useEffect(() => {
@@ -106,23 +120,14 @@ const ProductTypePage: React.FC<ProductTypePageProps> = ({ productType }) => {
     });
   };
 
-  /** Handle creation mode selection from McpCreationSelector */
-  const handleMcpModeSelect = (mode: CreationMode) => {
-    setSelectorVisible(false);
-    if (mode === 'vendor') {
-      // Open existing ImportMcpModal for third-party market import
+  const handleImportMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'MARKET') {
       setMcpImportOpen(true);
-    } else {
-      // Open McpStepWizard for manual / gateway / nacos modes
-      setWizardMode(mode);
-      setWizardVisible(true);
+      return;
     }
-  };
 
-  /** Handle wizard success — refresh product list */
-  const handleWizardSuccess = () => {
-    setWizardVisible(false);
-    tableRef.current?.refresh();
+    setImportSource(key as StandardImportSource);
+    setImportModalVisible(true);
   };
 
   return (
@@ -130,17 +135,10 @@ const ProductTypePage: React.FC<ProductTypePageProps> = ({ productType }) => {
       {/* Page Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{TYPE_TITLES[productType]}</h1>
-          <p className="text-gray-500 mt-2">{TYPE_SUBTITLES[productType]}</p>
+          <h1 className="text-3xl font-bold tracking-tight">API Products</h1>
+          <p className="text-gray-500 mt-2">管理和配置您的所有 API 产品</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* MCP_SERVER: single unified "创建 MCP" button */}
-          {isMcpServer && (
-            <Button icon={<PlusOutlined />} onClick={() => setSelectorVisible(true)} type="primary">
-              创建 MCP
-            </Button>
-          )}
-          {/* Non-MCP types: keep original buttons */}
           {!isMcpServer && showNacosImport && (
             <Button
               disabled={!defaultNacos}
@@ -151,51 +149,66 @@ const ProductTypePage: React.FC<ProductTypePageProps> = ({ productType }) => {
               从 Nacos 导入
             </Button>
           )}
-          {showBatchImport && (
-            <Button icon={<ImportOutlined />} onClick={() => setImportModalVisible(true)}>
-              批量导入
-            </Button>
-          )}
-          {!isMcpServer && (
-            <Button
-              icon={<PlusOutlined />}
-              onClick={() => tableRef.current?.handleCreate()}
-              type="primary"
+          {showImportMenu && importMenuItems.length > 0 && (
+            <Dropdown
+              menu={{ items: importMenuItems, onClick: handleImportMenuClick }}
+              trigger={['click']}
             >
-              创建 API Product
-            </Button>
+              <Button icon={<ImportOutlined />}>
+                导入
+                <DownOutlined />
+              </Button>
+            </Dropdown>
           )}
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => tableRef.current?.handleCreate()}
+            type="primary"
+          >
+            创建
+          </Button>
         </div>
+      </div>
+
+      {/* Product Type Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {PRODUCT_TYPES.map((type) => (
+            <button
+              className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                productType === type.key
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              key={type.key}
+              onClick={() => navigate(`/api-products/${type.path}`)}
+            >
+              {type.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
       <ProductTable productType={productType} ref={tableRef} />
 
-      {/* MCP creation flow modals */}
+      {/* MCP third-party market import modal */}
       {isMcpServer && (
-        <>
-          <McpCreationSelector
-            onCancel={() => setSelectorVisible(false)}
-            onSelect={handleMcpModeSelect}
-            visible={selectorVisible}
-          />
-          <McpStepWizard
-            mode={wizardMode}
-            onCancel={() => setWizardVisible(false)}
-            onSuccess={handleWizardSuccess}
-            visible={wizardVisible}
-          />
-          <ImportMcpModal
-            onClose={() => setMcpImportOpen(false)}
-            onImportSuccess={() => tableRef.current?.refresh()}
-            open={mcpImportOpen}
-          />
-        </>
+        <ImportMcpModal
+          onClose={() => setMcpImportOpen(false)}
+          onImportSuccess={() => tableRef.current?.refresh()}
+          open={mcpImportOpen}
+        />
       )}
 
       <ImportProductsModal
-        onCancel={() => setImportModalVisible(false)}
+        importSource={importSource ?? undefined}
+        onCancel={() => {
+          setImportModalVisible(false);
+          setImportSource(null);
+        }}
         onSuccess={() => {
           setImportModalVisible(false);
+          setImportSource(null);
           tableRef.current?.refresh();
         }}
         productType={productType as 'REST_API' | 'MCP_SERVER' | 'AGENT_API' | 'MODEL_API'}

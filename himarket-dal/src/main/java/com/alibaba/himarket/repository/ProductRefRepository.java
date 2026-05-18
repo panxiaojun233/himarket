@@ -23,9 +23,7 @@ import com.alibaba.himarket.entity.ProductRef;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public interface ProductRefRepository extends BaseRepository<ProductRef, Long> {
 
     /**
@@ -66,4 +64,20 @@ public interface ProductRefRepository extends BaseRepository<ProductRef, Long> {
      * @return the list of product references
      */
     List<ProductRef> findByProductIdIn(Collection<String> productIds);
+
+    /**
+     * Find product reference by API definition ID
+     *
+     * @param apiDefinitionId the API definition ID
+     * @return the product reference if found
+     */
+    Optional<ProductRef> findByApiDefinitionId(String apiDefinitionId);
+
+    /**
+     * Check if API definition ID exists in product references
+     *
+     * @param apiDefinitionId the API definition ID
+     * @return true if exists, false otherwise
+     */
+    boolean existsByApiDefinitionId(String apiDefinitionId);
 }

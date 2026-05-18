@@ -19,6 +19,7 @@ export interface ProductDetailHeaderProps {
   agentConfig?: IAgentConfig;
   updatedAt?: string;
   productType?: 'REST_API' | 'MCP_SERVER' | 'AGENT_API' | 'MODEL_API' | 'AGENT_SKILL';
+  subscribable?: boolean;
   ref?: Ref<ProductHeaderHandle>;
   onSubscriptionStatusChange?: (subscribed: boolean) => void;
 }
@@ -69,7 +70,7 @@ export function ProductDetailLayout({
         {/* 返回按钮 */}
         <button
           className="
-            flex items-center gap-2 mb-4 px-4 py-2 rounded-xl
+            flex items-center gap-2 mb-4 px-4 py-2 rounded-[10px]
             text-gray-600 hover:text-colorPrimary
             hover:bg-colorPrimaryBgHover
             transition-all duration-200
@@ -84,11 +85,11 @@ export function ProductDetailLayout({
       </div>
 
       {/* 主要内容区域 */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         {/* 左侧内容 - 65% */}
-        <div className="w-full lg:w-[65%] order-2 lg:order-1">{leftContent}</div>
+        <div className="order-2 min-w-0 lg:order-1">{leftContent}</div>
         {/* 右侧内容 - 35% */}
-        <div className="w-full lg:w-[35%] order-1 lg:order-2">{rightContent}</div>
+        <div className="order-1 min-w-0 lg:order-2">{rightContent}</div>
       </div>
     </Layout>
   );

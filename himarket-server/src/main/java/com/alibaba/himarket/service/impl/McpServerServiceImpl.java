@@ -22,7 +22,6 @@ package com.alibaba.himarket.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.himarket.core.constant.Resources;
 import com.alibaba.himarket.core.exception.BusinessException;
 import com.alibaba.himarket.core.exception.ErrorCode;
@@ -51,15 +50,9 @@ import com.alibaba.himarket.service.mcp.McpProtocolUtils;
 import com.alibaba.himarket.service.mcp.McpSandboxOrchestrator;
 import com.alibaba.himarket.service.mcp.McpToolsConfigParser;
 import com.alibaba.himarket.service.mcp.McpTransportResolver;
-import com.alibaba.himarket.support.chat.mcp.MCPTransportConfig;
-import com.alibaba.himarket.support.enums.MCPTransportMode;
-import com.alibaba.himarket.support.enums.McpEndpointStatus;
-import com.alibaba.himarket.support.enums.McpHostingType;
-import com.alibaba.himarket.support.enums.McpOrigin;
-import com.alibaba.himarket.support.enums.McpProtocolType;
-import com.alibaba.himarket.support.enums.ProductStatus;
-import com.alibaba.himarket.support.enums.SourceType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.himarket.support.chat.mcp.McpTransportConfig;
+import com.alibaba.himarket.support.enums.*;
+import com.alibaba.himarket.utils.JsonUtil;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.annotation.Resource;
@@ -83,7 +76,6 @@ public class McpServerServiceImpl implements McpServerService {
     private final ProductPublicationRepository publicationRepository;
     private final ContextHolder contextHolder;
     private final ToolManager toolManager;
-    private final ObjectMapper objectMapper;
     private final McpConfigSyncHelper configSyncHelper;
     private final McpSandboxOrchestrator sandboxOrchestrator;
     private final McpTransportResolver transportResolver;
@@ -97,7 +89,6 @@ public class McpServerServiceImpl implements McpServerService {
             ProductPublicationRepository publicationRepository,
             ContextHolder contextHolder,
             ToolManager toolManager,
-            ObjectMapper objectMapper,
             McpConfigSyncHelper configSyncHelper,
             McpSandboxOrchestrator sandboxOrchestrator,
             McpTransportResolver transportResolver) {
@@ -107,7 +98,6 @@ public class McpServerServiceImpl implements McpServerService {
         this.publicationRepository = publicationRepository;
         this.contextHolder = contextHolder;
         this.toolManager = toolManager;
-        this.objectMapper = objectMapper;
         this.configSyncHelper = configSyncHelper;
         this.sandboxOrchestrator = sandboxOrchestrator;
         this.transportResolver = transportResolver;
@@ -199,7 +189,8 @@ public class McpServerServiceImpl implements McpServerService {
                         ErrorCode.INVALID_REQUEST, "非 stdio 协议必须提供 connectionConfig（包含连接地址）");
             }
             try {
-                cn.hutool.json.JSONObject connJson = JSONUtil.parseObj(connCfg);
+                com.fasterxml.jackson.databind.node.ObjectNode connJson =
+                        JsonUtil.readObjectNode(connCfg);
                 String url =
                         configSyncHelper.extractEndpointUrl(
                                 connJson, param.getMcpName(), param.getProtocolType());
@@ -236,7 +227,7 @@ public class McpServerServiceImpl implements McpServerService {
         if (StrUtil.isNotBlank(param.getIcon())) {
             try {
                 product.setIcon(
-                        JSONUtil.toBean(
+                        JsonUtil.parse(
                                 param.getIcon(), com.alibaba.himarket.support.product.Icon.class));
             } catch (Exception e) {
                 log.warn("解析 icon JSON 失败: {}", e.getMessage());
@@ -803,7 +794,7 @@ public class McpServerServiceImpl implements McpServerService {
                             String iconStr = null;
                             if (product != null && product.getIcon() != null) {
                                 try {
-                                    iconStr = JSONUtil.toJsonStr(product.getIcon());
+                                    iconStr = JsonUtil.toJson(product.getIcon());
                                 } catch (Exception e) {
                                     // ignore
                                 }
@@ -836,7 +827,7 @@ public class McpServerServiceImpl implements McpServerService {
     // ==================== Transport Config Resolution ====================
 
     @Override
-    public List<MCPTransportConfig> resolveTransportConfigs(
+    public List<McpTransportConfig> resolveTransportConfigs(
             List<String> productIds, String userId) {
         return transportResolver.resolveTransportConfigs(productIds, userId);
     }
@@ -881,10 +872,10 @@ public class McpServerServiceImpl implements McpServerService {
 
     private void fetchAndSaveToolsListOrThrow(
             McpServerMeta meta, String endpointUrl, String transportType) {
-        MCPTransportMode mode = McpProtocolType.resolveTransportMode(transportType);
+        McpTransportMode mode = McpProtocolType.resolveTransportMode(transportType);
 
-        MCPTransportConfig config =
-                MCPTransportConfig.builder()
+        McpTransportConfig config =
+                McpTransportConfig.builder()
                         .mcpServerName(meta.getMcpName())
                         .transportMode(mode)
                         .url(endpointUrl)
@@ -900,7 +891,7 @@ public class McpServerServiceImpl implements McpServerService {
         List<McpSchema.Tool> tools = client.listTools().block();
         if (tools != null && !tools.isEmpty()) {
             try {
-                String toolsJson = objectMapper.writeValueAsString(tools);
+                String toolsJson = JsonUtil.toJson(tools);
                 meta.setToolsConfig(toolsJson);
             } catch (Exception e) {
                 throw new BusinessException(

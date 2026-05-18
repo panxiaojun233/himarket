@@ -21,29 +21,29 @@ package com.alibaba.himarket.service.gateway;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.himarket.core.exception.BusinessException;
 import com.alibaba.himarket.core.exception.ErrorCode;
 import com.alibaba.himarket.dto.result.agent.AgentAPIResult;
 import com.alibaba.himarket.dto.result.agent.AgentConfigResult;
 import com.alibaba.himarket.dto.result.common.DomainResult;
 import com.alibaba.himarket.dto.result.common.PageResult;
+import com.alibaba.himarket.dto.result.consumer.CredentialContext;
 import com.alibaba.himarket.dto.result.httpapi.APIResult;
 import com.alibaba.himarket.dto.result.httpapi.HttpRouteResult;
-import com.alibaba.himarket.dto.result.mcp.APIGMCPServerResult;
-import com.alibaba.himarket.dto.result.mcp.GatewayMCPServerResult;
-import com.alibaba.himarket.dto.result.mcp.MCPConfigResult;
+import com.alibaba.himarket.dto.result.mcp.APIGMcpServerResult;
+import com.alibaba.himarket.dto.result.mcp.GatewayMcpServerResult;
+import com.alibaba.himarket.dto.result.mcp.McpConfigResult;
 import com.alibaba.himarket.dto.result.model.AIGWModelAPIResult;
 import com.alibaba.himarket.dto.result.model.GatewayModelAPIResult;
 import com.alibaba.himarket.dto.result.model.ModelConfigResult;
 import com.alibaba.himarket.entity.Gateway;
+import com.alibaba.himarket.entity.ProductRef;
 import com.alibaba.himarket.service.gateway.client.APIGClient;
 import com.alibaba.himarket.support.consumer.APIGAuthConfig;
 import com.alibaba.himarket.support.consumer.ConsumerAuthConfig;
-import com.alibaba.himarket.support.enums.APIGAPIType;
-import com.alibaba.himarket.support.enums.APIGResourceType;
-import com.alibaba.himarket.support.enums.GatewayType;
+import com.alibaba.himarket.support.enums.*;
 import com.alibaba.himarket.support.product.APIGRefConfig;
+import com.alibaba.himarket.utils.JsonUtil;
 import com.aliyun.sdk.gateway.pop.exception.PopClientException;
 import com.aliyun.sdk.service.apig20240327.models.*;
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ import org.springframework.stereotype.Service;
 public class AIGWOperator extends APIGOperator {
 
     @Override
-    public PageResult<? extends GatewayMCPServerResult> fetchMcpServers(
+    public PageResult<? extends GatewayMcpServerResult> fetchMcpServers(
             Gateway gateway, int page, int size) {
         APIGClient client = getClient(gateway);
 
@@ -80,15 +80,15 @@ public class AIGWOperator extends APIGOperator {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, result.getBody().getMessage());
         }
 
-        List<APIGMCPServerResult> mcpServers =
+        List<APIGMcpServerResult> mcpServers =
                 Optional.ofNullable(result.getBody().getData().getItems())
                         .map(
                                 items ->
                                         items.stream()
                                                 .map(
                                                         item -> {
-                                                            APIGMCPServerResult mcpServer =
-                                                                    new APIGMCPServerResult();
+                                                            APIGMcpServerResult mcpServer =
+                                                                    new APIGMcpServerResult();
                                                             mcpServer.setMcpServerId(
                                                                     item.getMcpServerId());
                                                             mcpServer.setMcpServerName(
@@ -108,7 +108,7 @@ public class AIGWOperator extends APIGOperator {
     public String fetchMcpConfig(Gateway gateway, Object conf) {
         APIGRefConfig config = (APIGRefConfig) conf;
         APIGClient client = getClient(gateway);
-        MCPConfigResult mcpConfig = new MCPConfigResult();
+        McpConfigResult mcpConfig = new McpConfigResult();
 
         CompletableFuture<GetMcpServerResponse> f =
                 client.execute(
@@ -129,7 +129,7 @@ public class AIGWOperator extends APIGOperator {
         // mcpServer name
         mcpConfig.setMcpServerName(resp.getName());
         // mcpServer config
-        MCPConfigResult.MCPServerConfig serverConfig = new MCPConfigResult.MCPServerConfig();
+        McpConfigResult.McpServerConfig serverConfig = new McpConfigResult.McpServerConfig();
 
         String path = resp.getMcpServerPath();
         String exposedUriPath = resp.getExposedUriPath();
@@ -158,11 +158,14 @@ public class AIGWOperator extends APIGOperator {
                         .collect(Collectors.toList()));
         mcpConfig.setMcpServerConfig(serverConfig);
 
-        // meta
-        MCPConfigResult.McpMetadata meta = new MCPConfigResult.McpMetadata();
+        mcpConfig.setProtocol(McpProtocolType.fromString(resp.getProtocol()));
+        mcpConfig.setFromType(
+                StrUtil.equalsIgnoreCase(resp.getProtocol(), "HTTP")
+                        ? McpFromType.HTTP_TO_MCP
+                        : McpFromType.NATIVE_MCP);
+
+        McpConfigResult.McpMetadata meta = new McpConfigResult.McpMetadata();
         meta.setSource(GatewayType.APIG_AI.name());
-        meta.setProtocol(resp.getProtocol());
-        meta.setCreateFromType(resp.getCreateFromType());
         mcpConfig.setMeta(meta);
 
         // tools
@@ -171,12 +174,46 @@ public class AIGWOperator extends APIGOperator {
             mcpConfig.setTools(Base64.isBase64(tools) ? Base64.decodeStr(tools) : tools);
         }
 
-        return JSONUtil.toJsonStr(mcpConfig);
+        return JsonUtil.toJson(mcpConfig);
     }
 
     @Override
-    public String fetchMcpToolsForConfig(Gateway gateway, Object conf) {
-        return null;
+    public CredentialContext fetchApiCredential(
+            Gateway gateway, ProductType productType, ProductRef productRef) {
+        // Only mcp server is supported for now
+        if (productType != ProductType.MCP_SERVER) {
+            return new CredentialContext();
+        }
+
+        APIGRefConfig config = productRef.getApigRefConfig();
+        if (config == null || StrUtil.isBlank(config.getMcpRouteId())) {
+            return new CredentialContext();
+        }
+
+        APIGClient client = getClient(gateway);
+        CompletableFuture<QueryConsumerAuthorizationRulesResponse> f =
+                client.execute(
+                        c ->
+                                c.queryConsumerAuthorizationRules(
+                                        QueryConsumerAuthorizationRulesRequest.builder()
+                                                .resourceId(config.getMcpRouteId())
+                                                .resourceType(APIGResourceType.MCP.getType())
+                                                .pageNumber(1)
+                                                .pageSize(1)
+                                                .build()));
+        QueryConsumerAuthorizationRulesResponse response = f.join();
+        if (200 != response.getStatusCode()) {
+            throw new BusinessException(ErrorCode.GATEWAY_ERROR, response.getBody().getMessage());
+        }
+
+        return Optional.ofNullable(response.getBody())
+                .map(QueryConsumerAuthorizationRulesResponseBody::getData)
+                .map(QueryConsumerAuthorizationRulesResponseBody.Data::getItems)
+                .filter(items -> !items.isEmpty())
+                .map(items -> items.get(0).getConsumerId())
+                .filter(StrUtil::isNotBlank)
+                .map(consumerId -> fetchConsumerCredential(gateway, consumerId))
+                .orElseGet(() -> CredentialContext.builder().build());
     }
 
     @Override
@@ -231,14 +268,14 @@ public class AIGWOperator extends APIGOperator {
                         .build();
         result.setAgentAPIConfig(agentAPIConfig);
 
-        // 构建元数据（与 agentAPIConfig 同级）
+        // Build metadata at the same level as agentAPIConfig
         AgentConfigResult.AgentMetadata meta =
                 AgentConfigResult.AgentMetadata.builder()
-                        .source(GatewayType.APIG_AI.name()) // 标识来源为 AI 网关
+                        .source(GatewayType.APIG_AI.name()) // Mark the source as AI gateway
                         .build();
-        result.setMeta(meta); // 设置元数据到顶层
+        result.setMeta(meta); // Set metadata on the top-level result
 
-        return JSONUtil.toJsonStr(result);
+        return JsonUtil.toJson(result);
     }
 
     @Override
@@ -265,59 +302,12 @@ public class AIGWOperator extends APIGOperator {
                         .build();
         result.setModelAPIConfig(apiConfig);
 
-        return JSONUtil.toJsonStr(result);
+        return JsonUtil.toJson(result);
     }
 
     @Override
     public GatewayType getGatewayType() {
         return GatewayType.APIG_AI;
-    }
-
-    public String fetchMcpTools(Gateway gateway, String routeId) {
-        APIGClient client = getClient(gateway);
-
-        try {
-            CompletableFuture<ListPluginAttachmentsResponse> f =
-                    client.execute(
-                            c -> {
-                                ListPluginAttachmentsRequest request =
-                                        ListPluginAttachmentsRequest.builder()
-                                                .gatewayId(gateway.getGatewayId())
-                                                .attachResourceId(routeId)
-                                                .attachResourceType("GatewayRoute")
-                                                .pageNumber(1)
-                                                .pageSize(100)
-                                                .build();
-
-                                return c.listPluginAttachments(request);
-                            });
-
-            ListPluginAttachmentsResponse response = f.join();
-            if (response.getStatusCode() != 200) {
-                throw new BusinessException(
-                        ErrorCode.GATEWAY_ERROR, response.getBody().getMessage());
-            }
-
-            for (ListPluginAttachmentsResponseBody.Items item :
-                    response.getBody().getData().getItems()) {
-                PluginClassInfo classInfo = item.getPluginClassInfo();
-
-                if (!StrUtil.equalsIgnoreCase(classInfo.getName(), "mcp-server")) {
-                    continue;
-                }
-
-                String pluginConfig = item.getPluginConfig();
-                if (StrUtil.isNotBlank(pluginConfig)) {
-                    return Base64.decodeStr(pluginConfig);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error fetching Plugin Attachment", e);
-            throw new BusinessException(
-                    ErrorCode.INTERNAL_ERROR,
-                    "Error fetching Plugin Attachment，Cause：" + e.getMessage());
-        }
-        return null;
     }
 
     @Override
@@ -341,7 +331,7 @@ public class AIGWOperator extends APIGOperator {
         }
 
         try {
-            // 确认Gateway的EnvId
+            // Confirm the gateway environment ID
             String envId = fetchGatewayEnv(gateway);
 
             CreateConsumerAuthorizationRulesRequest.AuthorizationRules rule =
@@ -379,6 +369,8 @@ public class AIGWOperator extends APIGOperator {
                                     response.getBody().getData().getConsumerAuthorizationRuleIds())
                             .build();
             return ConsumerAuthConfig.builder().apigAuthConfig(apigAuthConfig).build();
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             Throwable cause = e.getCause();
             if (cause instanceof PopClientException
